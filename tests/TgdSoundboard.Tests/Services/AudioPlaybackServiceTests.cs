@@ -127,24 +127,6 @@ public class AudioPlaybackServiceTests : IDisposable
     }
 
     [Fact]
-    public void GetOutputDevices_MarksVirtualCablesCorrectly()
-    {
-        // Act
-        var devices = AudioPlaybackService.GetOutputDevices();
-
-        // Assert - verify that devices with "CABLE" or "Virtual" in name are marked as virtual
-        foreach (var device in devices)
-        {
-            if (device.Name.Contains("CABLE", StringComparison.OrdinalIgnoreCase) ||
-                device.Name.Contains("Virtual", StringComparison.OrdinalIgnoreCase) ||
-                device.Name.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase))
-            {
-                device.IsVirtualCable.Should().BeTrue($"Device '{device.Name}' should be marked as virtual cable");
-            }
-        }
-    }
-
-    [Fact]
     public void GetOutputDevices_HasAtMostOneDefault()
     {
         // Act

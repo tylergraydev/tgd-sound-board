@@ -247,16 +247,16 @@ public class DatabaseService
         var settings = new AppSettings();
 
         settings.OutputDeviceId = await GetSettingAsync("OutputDeviceId") ?? string.Empty;
-        settings.VirtualCableDeviceId = await GetSettingAsync("VirtualCableDeviceId") ?? string.Empty;
-        settings.InputDeviceId = await GetSettingAsync("InputDeviceId") ?? string.Empty;
-        settings.LoopbackDeviceId = await GetSettingAsync("LoopbackDeviceId") ?? string.Empty;
         settings.MasterVolume = float.TryParse(await GetSettingAsync("MasterVolume"), out var vol) ? vol : 1.0f;
-        settings.PassSystemAudio = bool.TryParse(await GetSettingAsync("PassSystemAudio"), out var pass) && pass;
-        settings.PassMicrophone = bool.TryParse(await GetSettingAsync("PassMicrophone"), out var mic) && mic;
         settings.GridColumns = int.TryParse(await GetSettingAsync("GridColumns"), out var cols) ? cols : 6;
         settings.ClipsDirectory = await GetSettingAsync("ClipsDirectory") ??
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TgdSoundboard", "Clips");
         settings.Theme = await GetSettingAsync("Theme") ?? "Neon";
+
+        // Streamlabs settings
+        settings.StreamlabsToken = await GetSettingAsync("StreamlabsToken") ?? string.Empty;
+        settings.StreamlabsAutoConnect = bool.TryParse(await GetSettingAsync("StreamlabsAutoConnect"), out var autoConnect) && autoConnect;
+        settings.StreamlabsReplayScene = await GetSettingAsync("StreamlabsReplayScene") ?? string.Empty;
 
         Directory.CreateDirectory(settings.ClipsDirectory);
 
@@ -266,15 +266,15 @@ public class DatabaseService
     public async Task SaveAppSettingsAsync(AppSettings settings)
     {
         await SetSettingAsync("OutputDeviceId", settings.OutputDeviceId);
-        await SetSettingAsync("VirtualCableDeviceId", settings.VirtualCableDeviceId);
-        await SetSettingAsync("InputDeviceId", settings.InputDeviceId);
-        await SetSettingAsync("LoopbackDeviceId", settings.LoopbackDeviceId);
         await SetSettingAsync("MasterVolume", settings.MasterVolume.ToString());
-        await SetSettingAsync("PassSystemAudio", settings.PassSystemAudio.ToString());
-        await SetSettingAsync("PassMicrophone", settings.PassMicrophone.ToString());
         await SetSettingAsync("GridColumns", settings.GridColumns.ToString());
         await SetSettingAsync("ClipsDirectory", settings.ClipsDirectory);
         await SetSettingAsync("Theme", settings.Theme);
+
+        // Streamlabs settings
+        await SetSettingAsync("StreamlabsToken", settings.StreamlabsToken);
+        await SetSettingAsync("StreamlabsAutoConnect", settings.StreamlabsAutoConnect.ToString());
+        await SetSettingAsync("StreamlabsReplayScene", settings.StreamlabsReplayScene);
     }
 
     public async Task ExportConfigAsync(string filePath)

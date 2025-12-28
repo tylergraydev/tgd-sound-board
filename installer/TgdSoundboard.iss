@@ -35,15 +35,10 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
-Name: "installvbcable"; Description: "Install VB-Cable Virtual Audio Device (required for audio routing)"; GroupDescription: "Virtual Audio Cable:"; Flags: checkedonce
 
 [Files]
 ; Main application files
 Source: "..\publish\win-x64\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
-
-; VB-Cable installer files
-Source: "vb-cable\VBCABLE_Setup_x64.exe"; DestDir: "{tmp}"; Flags: ignoreversion; Tasks: installvbcable
-Source: "vb-cable\VBCABLE_Setup.exe"; DestDir: "{tmp}"; Flags: ignoreversion; Tasks: installvbcable
 
 [Icons]
 Name: "{group}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"
@@ -51,38 +46,10 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; Run VB-Cable installer if selected (requires user to click "Install Driver" in GUI)
-Filename: "{tmp}\VBCABLE_Setup_x64.exe"; StatusMsg: "Installing VB-Cable Virtual Audio Device (click 'Install Driver' in the window)..."; Flags: waituntilterminated shellexec; Tasks: installvbcable; Check: IsWin64 and not IsVBCableInstalled
-Filename: "{tmp}\VBCABLE_Setup.exe"; StatusMsg: "Installing VB-Cable Virtual Audio Device (click 'Install Driver' in the window)..."; Flags: waituntilterminated shellexec; Tasks: installvbcable; Check: not IsWin64 and not IsVBCableInstalled
-
 ; Launch app after install
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
 
 [Code]
-// Check if VB-Cable is already installed by looking for the audio device
-function IsVBCableInstalled: Boolean;
-var
-  RegKey: String;
-begin
-  Result := False;
-
-  // Check for VB-Cable in the registry (audio devices)
-  RegKey := 'SOFTWARE\Microsoft\Windows\CurrentVersion\MMDevices\Audio\Render';
-
-  // Alternative: Check if the driver files exist
-  if FileExists(ExpandConstant('{sys}\drivers\vbaudio_cable64_win7.sys')) then
-  begin
-    Result := True;
-    Exit;
-  end;
-
-  if FileExists(ExpandConstant('{sys}\drivers\vbaudio_cable_win7.sys')) then
-  begin
-    Result := True;
-    Exit;
-  end;
-end;
-
 function InitializeSetup: Boolean;
 begin
   Result := True;
@@ -102,13 +69,12 @@ procedure CurStepChanged(CurStep: TSetupStep);
 begin
   if CurStep = ssPostInstall then
   begin
-    // Post-installation tasks if needed
-    if WizardIsTaskSelected('installvbcable') then
-    begin
-      MsgBox('If you installed VB-Cable, you may need to restart your computer for the audio device to appear.' + #13#10 + #13#10 +
-             'After restart, set VB-Cable as your "Virtual Cable Device" in TGD Soundboard settings.',
-             mbInformation, MB_OK);
-    end;
+    MsgBox('To capture audio in Streamlabs/OBS:' + #13#10 + #13#10 +
+           '1. Open Streamlabs Desktop' + #13#10 +
+           '2. Add Source > Application Audio Capture' + #13#10 +
+           '3. Select "TGD Soundboard"' + #13#10 + #13#10 +
+           'No virtual audio cables needed!',
+           mbInformation, MB_OK);
   end;
 end;
 

@@ -11,6 +11,7 @@ public partial class App : Application
     public static AudioRouterService AudioRouter { get; private set; } = null!;
     public static ClipStorageService ClipStorage { get; private set; } = null!;
     public static GlobalHotkeyService GlobalHotkeys { get; private set; } = null!;
+    public static StreamlabsService Streamlabs { get; private set; } = null!;
     public static MainViewModel MainViewModel { get; private set; } = null!;
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -32,9 +33,20 @@ public partial class App : Application
         }
 
         ClipStorage = new ClipStorageService(settings.ClipsDirectory);
-        AudioPlayback = new AudioPlaybackService(settings.OutputDeviceId, settings.VirtualCableDeviceId);
+        AudioPlayback = new AudioPlaybackService(settings.OutputDeviceId);
         AudioRouter = new AudioRouterService();
         GlobalHotkeys = new GlobalHotkeyService();
+        Streamlabs = new StreamlabsService();
+
+        // Configure Streamlabs if token is set
+        if (!string.IsNullOrEmpty(settings.StreamlabsToken))
+        {
+            Streamlabs.SetToken(settings.StreamlabsToken);
+            if (settings.StreamlabsAutoConnect)
+            {
+                _ = Streamlabs.ConnectAsync();
+            }
+        }
 
         // Initialize main view model
         MainViewModel = new MainViewModel();
@@ -74,6 +86,7 @@ public partial class App : Application
         GlobalHotkeys?.Dispose();
         AudioPlayback?.Dispose();
         AudioRouter?.Dispose();
+        Streamlabs?.Dispose();
         base.OnExit(e);
     }
 }

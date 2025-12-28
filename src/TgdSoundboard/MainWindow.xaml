@@ -688,55 +688,19 @@
             </Grid>
         </Grid>
 
-        <!-- Bottom Audio Routing Bar -->
+        <!-- Bottom Status Bar -->
         <Border Grid.Row="2"
                 Background="{DynamicResource ThemeBgSecondaryBrush}"
                 Padding="20,12">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Virtual Cable Status -->
-                <StackPanel Grid.Column="0" Orientation="Horizontal">
-                    <Ellipse Width="8" Height="8" Fill="{DynamicResource ThemeSuccessBrush}" Margin="0,0,8,0" VerticalAlignment="Center"/>
-                    <TextBlock Text="Virtual Cable" VerticalAlignment="Center" Margin="0,0,16,0"/>
-
-                    <ToggleButton Style="{StaticResource MaterialDesignSwitchToggleButton}"
-                                  IsChecked="{Binding IsRoutingActive}"
-                                  Command="{Binding ToggleRoutingCommand}"
-                                  VerticalAlignment="Center"/>
-                    <TextBlock Text="Play"
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <materialDesign:PackIcon Kind="Information" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,8,0"/>
+                    <TextBlock Text="Tip: Use Streamlabs Application Audio Capture to stream soundboard audio"
                                VerticalAlignment="Center"
-                               Margin="8,0,24,0"/>
-
-                    <Button Click="OpenAppRouting_Click"
-                            Style="{StaticResource MaterialDesignFlatButton}"
-                            Background="{DynamicResource ThemeBgTertiaryBrush}"
-                            Foreground="{DynamicResource ThemeTextPrimaryBrush}"
-                            Padding="12,6"
-                            materialDesign:ButtonAssist.CornerRadius="8">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="ApplicationCog" VerticalAlignment="Center"/>
-                            <TextBlock Text="App Routing" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                        </StackPanel>
-                    </Button>
+                               Foreground="{DynamicResource ThemeTextMutedBrush}"
+                               FontSize="12"/>
                 </StackPanel>
-
-                <!-- Pass-through options -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <CheckBox Content="Pass System Audio"
-                              IsChecked="{Binding PassSystemAudio}"
-                              Foreground="{DynamicResource ThemeTextPrimaryBrush}"
-                              Margin="0,0,24,0"/>
-
-                    <CheckBox Content="Pass Microphone"
-                              IsChecked="{Binding PassMicrophone}"
-                              Foreground="{DynamicResource ThemeTextPrimaryBrush}"/>
-                </StackPanel>
-            </Grid>
+            </DockPanel>
         </Border>
     </Grid>
 </Window>

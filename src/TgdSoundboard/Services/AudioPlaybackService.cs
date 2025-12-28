@@ -7,10 +7,8 @@ namespace TgdSoundboard.Services;
 public class AudioPlaybackService : IDisposable
 {
     private readonly Dictionary<int, PlaybackInstance> _activePlaybacks = new();
-    private readonly MixingSampleProvider _primaryMixer;
-    private readonly MixingSampleProvider? _secondaryMixer;
-    private readonly WasapiOut _primaryOutput;
-    private readonly WasapiOut? _secondaryOutput;
+    private readonly MixingSampleProvider _mixer;
+    private readonly WasapiOut _outputDevice;
     private readonly object _lock = new();
     private float _masterVolume = 1.0f;
     private readonly Queue<SoundClip> _clipQueue = new();
@@ -19,8 +17,6 @@ public class AudioPlaybackService : IDisposable
     public event EventHandler<int>? ClipStarted;
     public event EventHandler<int>? ClipStopped;
     public event EventHandler? QueueChanged;
-
-    public bool HasSecondaryOutput => _secondaryOutput != null;
 
     public float MasterVolume
     {
@@ -38,42 +34,20 @@ public class AudioPlaybackService : IDisposable
         }
     }
 
-    public AudioPlaybackService(string? primaryDeviceId = null, string? secondaryDeviceId = null)
+    public AudioPlaybackService(string? deviceId = null)
     {
-        var waveFormat = WaveFormat.CreateIeeeFloatWaveFormat(44100, 2);
-
-        // Primary output (your headphones)
-        var primaryDevice = GetOutputDevice(primaryDeviceId);
-        _primaryOutput = primaryDevice != null
-            ? new WasapiOut(primaryDevice, NAudio.CoreAudioApi.AudioClientShareMode.Shared, true, 100)
+        var device = GetOutputDevice(deviceId);
+        _outputDevice = device != null
+            ? new WasapiOut(device, NAudio.CoreAudioApi.AudioClientShareMode.Shared, true, 100)
             : new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 100);
 
-        _primaryMixer = new MixingSampleProvider(waveFormat) { ReadFully = true };
-        _primaryOutput.Init(_primaryMixer);
-        _primaryOutput.Play();
-
-        // Secondary output (virtual cable for OBS) - optional
-        if (!string.IsNullOrEmpty(secondaryDeviceId))
+        _mixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
         {
-            var secondaryDevice = GetOutputDevice(secondaryDeviceId);
-            if (secondaryDevice != null)
-            {
-                try
-                {
-                    _secondaryOutput = new WasapiOut(secondaryDevice, NAudio.CoreAudioApi.AudioClientShareMode.Shared, true, 100);
-                    _secondaryMixer = new MixingSampleProvider(waveFormat) { ReadFully = true };
-                    _secondaryOutput.Init(_secondaryMixer);
-                    _secondaryOutput.Play();
-                    System.Diagnostics.Debug.WriteLine($"Secondary output initialized: {secondaryDevice.FriendlyName}");
-                }
-                catch (Exception ex)
-                {
-                    System.Diagnostics.Debug.WriteLine($"Failed to initialize secondary output: {ex.Message}");
-                    _secondaryOutput = null;
-                    _secondaryMixer = null;
-                }
-            }
-        }
+            ReadFully = true
+        };
+
+        _outputDevice.Init(_mixer);
+        _outputDevice.Play();
     }
 
     public void PlayClip(SoundClip clip)
@@ -88,39 +62,37 @@ public class AudioPlaybackService : IDisposable
 
             try
             {
-                // Create primary audio chain
-                var primaryReader = new AudioFileReader(clip.FilePath);
-                var primaryProvider = CreateAudioChain(primaryReader, clip);
+                var reader = new AudioFileReader(clip.FilePath);
+                ISampleProvider sampleProvider = reader;
 
-                // Create secondary audio chain if secondary output exists
-                AudioFileReader? secondaryReader = null;
-                VolumeSampleProvider? secondaryProvider = null;
-                if (_secondaryMixer != null)
+                // Apply speed change if configured
+                if (Math.Abs(clip.PlaybackSpeed - 1.0f) > 0.01f)
                 {
-                    secondaryReader = new AudioFileReader(clip.FilePath);
-                    secondaryProvider = CreateAudioChain(secondaryReader, clip);
+                    sampleProvider = new SpeedControlSampleProvider(sampleProvider, clip.PlaybackSpeed);
                 }
 
-                var playback = new PlaybackInstance(
-                    clip.Id,
-                    primaryReader,
-                    primaryProvider,
-                    clip.Volume,
-                    clip.IsLooping,
-                    clip.FadeOutSeconds,
-                    secondaryReader,
-                    secondaryProvider);
+                // Apply pitch shift if configured
+                if (clip.PitchSemitones != 0)
+                {
+                    sampleProvider = new PitchShiftSampleProvider(sampleProvider, clip.PitchSemitones);
+                }
+
+                // Apply fade in if configured
+                if (clip.FadeInSeconds > 0)
+                {
+                    sampleProvider = new FadeInOutSampleProvider(sampleProvider);
+                    ((FadeInOutSampleProvider)sampleProvider).BeginFadeIn(clip.FadeInSeconds * 1000);
+                }
+
+                var volumeProvider = new VolumeSampleProvider(sampleProvider)
+                {
+                    Volume = clip.Volume * _masterVolume
+                };
+
+                var playback = new PlaybackInstance(clip.Id, reader, volumeProvider, clip.Volume, clip.IsLooping, clip.FadeOutSeconds);
                 _activePlaybacks[clip.Id] = playback;
 
-                // Add to primary mixer (your headphones)
-                _primaryMixer.AddMixerInput(primaryProvider);
-
-                // Add to secondary mixer (virtual cable for OBS)
-                if (_secondaryMixer != null && secondaryProvider != null)
-                {
-                    _secondaryMixer.AddMixerInput(secondaryProvider);
-                }
-
+                _mixer.AddMixerInput(volumeProvider);
                 clip.IsPlaying = true;
                 ClipStarted?.Invoke(this, clip.Id);
 
@@ -132,35 +104,6 @@ public class AudioPlaybackService : IDisposable
                 System.Diagnostics.Debug.WriteLine($"Error playing clip: {ex.Message}");
             }
         }
-    }
-
-    private VolumeSampleProvider CreateAudioChain(AudioFileReader reader, SoundClip clip)
-    {
-        ISampleProvider sampleProvider = reader;
-
-        // Apply speed change if configured
-        if (Math.Abs(clip.PlaybackSpeed - 1.0f) > 0.01f)
-        {
-            sampleProvider = new SpeedControlSampleProvider(sampleProvider, clip.PlaybackSpeed);
-        }
-
-        // Apply pitch shift if configured
-        if (clip.PitchSemitones != 0)
-        {
-            sampleProvider = new PitchShiftSampleProvider(sampleProvider, clip.PitchSemitones);
-        }
-
-        // Apply fade in if configured
-        if (clip.FadeInSeconds > 0)
-        {
-            sampleProvider = new FadeInOutSampleProvider(sampleProvider);
-            ((FadeInOutSampleProvider)sampleProvider).BeginFadeIn(clip.FadeInSeconds * 1000);
-        }
-
-        return new VolumeSampleProvider(sampleProvider)
-        {
-            Volume = clip.Volume * _masterVolume
-        };
     }
 
     #region Queue Management
@@ -264,7 +207,6 @@ public class AudioPlaybackService : IDisposable
             if (playback.FadeOutSeconds > 0 && remaining.TotalSeconds <= playback.FadeOutSeconds && !playback.FadeOutStarted)
             {
                 playback.FadeOutStarted = true;
-                // Gradually reduce volume for fade out
                 _ = ApplyFadeOutAsync(playback);
             }
 
@@ -272,12 +214,7 @@ public class AudioPlaybackService : IDisposable
             {
                 if (playback.IsLooping)
                 {
-                    // Reset to beginning for loop (both readers)
                     playback.Reader.Position = 0;
-                    if (playback.SecondaryReader != null)
-                    {
-                        playback.SecondaryReader.Position = 0;
-                    }
                     playback.FadeOutStarted = false;
                 }
                 else
@@ -299,12 +236,7 @@ public class AudioPlaybackService : IDisposable
         for (int i = 0; i < steps; i++)
         {
             await Task.Delay((int)stepTime);
-            var newVolume = Math.Max(0, playback.VolumeProvider.Volume - (volumeStep * _masterVolume));
-            playback.VolumeProvider.Volume = newVolume;
-            if (playback.SecondaryVolumeProvider != null)
-            {
-                playback.SecondaryVolumeProvider.Volume = newVolume;
-            }
+            playback.VolumeProvider.Volume = Math.Max(0, playback.VolumeProvider.Volume - (volumeStep * _masterVolume));
         }
     }
 
@@ -314,11 +246,7 @@ public class AudioPlaybackService : IDisposable
         {
             if (_activePlaybacks.TryGetValue(clipId, out var playback))
             {
-                _primaryMixer.RemoveMixerInput(playback.VolumeProvider);
-                if (_secondaryMixer != null && playback.SecondaryVolumeProvider != null)
-                {
-                    _secondaryMixer.RemoveMixerInput(playback.SecondaryVolumeProvider);
-                }
+                _mixer.RemoveMixerInput(playback.VolumeProvider);
                 playback.Dispose();
                 _activePlaybacks.Remove(clipId);
                 ClipStopped?.Invoke(this, clipId);
@@ -380,10 +308,6 @@ public class AudioPlaybackService : IDisposable
             NAudio.CoreAudioApi.DataFlow.Render,
             NAudio.CoreAudioApi.DeviceState.Active))
         {
-            var isVirtualCable = device.FriendlyName.Contains("CABLE", StringComparison.OrdinalIgnoreCase) ||
-                                 device.FriendlyName.Contains("Virtual", StringComparison.OrdinalIgnoreCase) ||
-                                 device.FriendlyName.Contains("VB-Audio", StringComparison.OrdinalIgnoreCase);
-
             devices.Add(new AudioDevice
             {
                 Id = device.ID,
@@ -391,8 +315,7 @@ public class AudioPlaybackService : IDisposable
                 DeviceType = AudioDeviceType.Output,
                 IsDefault = device.ID == enumerator.GetDefaultAudioEndpoint(
                     NAudio.CoreAudioApi.DataFlow.Render,
-                    NAudio.CoreAudioApi.Role.Multimedia).ID,
-                IsVirtualCable = isVirtualCable
+                    NAudio.CoreAudioApi.Role.Multimedia).ID
             });
         }
 
@@ -440,10 +363,8 @@ public class AudioPlaybackService : IDisposable
     public void Dispose()
     {
         StopAll();
-        _primaryOutput.Stop();
-        _primaryOutput.Dispose();
-        _secondaryOutput?.Stop();
-        _secondaryOutput?.Dispose();
+        _outputDevice.Stop();
+        _outputDevice.Dispose();
     }
 
     private class PlaybackInstance : IDisposable
@@ -451,28 +372,16 @@ public class AudioPlaybackService : IDisposable
         public int ClipId { get; }
         public AudioFileReader Reader { get; }
         public VolumeSampleProvider VolumeProvider { get; }
-        public AudioFileReader? SecondaryReader { get; }
-        public VolumeSampleProvider? SecondaryVolumeProvider { get; }
         public float ClipVolume { get; set; }
         public bool IsLooping { get; }
         public float FadeOutSeconds { get; }
         public bool FadeOutStarted { get; set; }
 
-        public PlaybackInstance(
-            int clipId,
-            AudioFileReader reader,
-            VolumeSampleProvider volumeProvider,
-            float clipVolume,
-            bool isLooping = false,
-            float fadeOutSeconds = 0,
-            AudioFileReader? secondaryReader = null,
-            VolumeSampleProvider? secondaryVolumeProvider = null)
+        public PlaybackInstance(int clipId, AudioFileReader reader, VolumeSampleProvider volumeProvider, float clipVolume, bool isLooping = false, float fadeOutSeconds = 0)
         {
             ClipId = clipId;
             Reader = reader;
             VolumeProvider = volumeProvider;
-            SecondaryReader = secondaryReader;
-            SecondaryVolumeProvider = secondaryVolumeProvider;
             ClipVolume = clipVolume;
             IsLooping = isLooping;
             FadeOutSeconds = fadeOutSeconds;
@@ -481,16 +390,11 @@ public class AudioPlaybackService : IDisposable
         public void UpdateVolume(float masterVolume)
         {
             VolumeProvider.Volume = ClipVolume * masterVolume;
-            if (SecondaryVolumeProvider != null)
-            {
-                SecondaryVolumeProvider.Volume = ClipVolume * masterVolume;
-            }
         }
 
         public void Dispose()
         {
             Reader.Dispose();
-            SecondaryReader?.Dispose();
         }
     }
 }
@@ -551,7 +455,6 @@ public class SpeedControlSampleProvider : ISampleProvider
 
 /// <summary>
 /// Simple pitch shift using resampling (changes tempo too - for true pitch shift without tempo change, use SoundTouch)
-/// This is a simple approximation that works for small pitch changes
 /// </summary>
 public class PitchShiftSampleProvider : ISampleProvider
 {
@@ -564,15 +467,12 @@ public class PitchShiftSampleProvider : ISampleProvider
     public PitchShiftSampleProvider(ISampleProvider source, int semitones)
     {
         _source = source;
-        // Each semitone is a factor of 2^(1/12)
         _pitchFactor = (float)Math.Pow(2, semitones / 12.0);
         _sourceBuffer = new float[_source.WaveFormat.SampleRate * _source.WaveFormat.Channels * 2];
     }
 
     public int Read(float[] buffer, int offset, int count)
     {
-        // For pitch up, we need more source samples
-        // For pitch down, we need fewer source samples
         int samplesNeeded = (int)(count * _pitchFactor) + 2;
         if (samplesNeeded > _sourceBuffer.Length)
         {

@@ -25,25 +25,7 @@ public partial class MainViewModel : ObservableObject
     private AudioDevice? _selectedOutputDevice;
 
     [ObservableProperty]
-    private AudioDevice? _selectedVirtualCableDevice;
-
-    [ObservableProperty]
-    private AudioDevice? _selectedInputDevice;
-
-    [ObservableProperty]
     private float _masterVolume = 1.0f;
-
-    [ObservableProperty]
-    private bool _passSystemAudio;
-
-    [ObservableProperty]
-    private bool _passMicrophone;
-
-    [ObservableProperty]
-    private bool _isRoutingActive;
-
-    [ObservableProperty]
-    private bool _isVirtualCableAvailable;
 
     [ObservableProperty]
     private AppSettings _settings = new();
@@ -72,14 +54,25 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private bool _hasQueuedClips;
 
+    // Streamlabs properties
+    [ObservableProperty]
+    private bool _isStreamlabsConnected;
+
+    [ObservableProperty]
+    private string _streamlabsStatus = "Not connected";
+
     private Dictionary<int, List<SoundClip>> _allClips = new();
 
     public MainViewModel()
     {
         App.AudioPlayback.ClipStarted += OnClipStarted;
         App.AudioPlayback.ClipStopped += OnClipStopped;
-        App.AudioRouter.RoutingStatusChanged += OnRoutingStatusChanged;
         App.AudioPlayback.QueueChanged += OnQueueChanged;
+
+        // Subscribe to Streamlabs events
+        App.Streamlabs.ConnectionChanged += OnStreamlabsConnectionChanged;
+        App.Streamlabs.ErrorOccurred += OnStreamlabsError;
+        App.Streamlabs.ReplaySaved += OnReplaySaved;
     }
 
     private void OnQueueChanged(object? sender, EventArgs e)
@@ -103,8 +96,6 @@ public partial class MainViewModel : ObservableObject
         // Load settings
         Settings = await App.Database.GetAppSettingsAsync();
         MasterVolume = Settings.MasterVolume;
-        PassSystemAudio = Settings.PassSystemAudio;
-        PassMicrophone = Settings.PassMicrophone;
 
         // Load audio devices
         RefreshAudioDevices();
@@ -118,9 +109,6 @@ public partial class MainViewModel : ObservableObject
             SelectedCategory = Categories[0];
             SelectedCategory.IsSelected = true;
         }
-
-        // Check for virtual cable
-        IsVirtualCableAvailable = AudioRouterService.FindVirtualCableDevice() != null;
 
         // Load favorites
         RefreshFavorites();
@@ -147,15 +135,9 @@ public partial class MainViewModel : ObservableObject
         var inputs = AudioPlaybackService.GetInputDevices();
         InputDevices = new ObservableCollection<AudioDevice>(inputs);
 
-        // Select saved devices
+        // Select saved output device
         SelectedOutputDevice = OutputDevices.FirstOrDefault(d => d.Id == Settings.OutputDeviceId)
             ?? OutputDevices.FirstOrDefault(d => d.IsDefault);
-
-        SelectedVirtualCableDevice = OutputDevices.FirstOrDefault(d => d.Id == Settings.VirtualCableDeviceId)
-            ?? OutputDevices.FirstOrDefault(d => d.IsVirtualCable);
-
-        SelectedInputDevice = InputDevices.FirstOrDefault(d => d.Id == Settings.InputDeviceId)
-            ?? InputDevices.FirstOrDefault(d => d.IsDefault);
     }
 
     partial void OnMasterVolumeChanged(float value)
@@ -281,24 +263,6 @@ public partial class MainViewModel : ObservableObject
         CloseClipEditor();
     }
 
-    [RelayCommand]
-    private void ToggleRouting()
-    {
-        if (IsRoutingActive)
-        {
-            App.AudioRouter.StopRouting();
-        }
-        else
-        {
-            App.AudioRouter.StartRouting(
-                SelectedVirtualCableDevice?.Id,
-                PassSystemAudio,
-                PassMicrophone,
-                null, // Use default loopback
-                SelectedInputDevice?.Id);
-        }
-    }
-
     private void OnClipStarted(object? sender, int clipId)
     {
         var clip = FindClipById(clipId);
@@ -315,11 +279,6 @@ public partial class MainViewModel : ObservableObject
         {
             clip.IsPlaying = false;
         }
-    }
-
-    private void OnRoutingStatusChanged(object? sender, bool isActive)
-    {
-        IsRoutingActive = isActive;
     }
 
     private SoundClip? FindClipById(int clipId)
@@ -379,5 +338,86 @@ public partial class MainViewModel : ObservableObject
     {
         FilterClips(string.Empty);
         _allClips.Clear();
+    }
+
+    // Streamlabs methods
+    private void OnStreamlabsConnectionChanged(object? sender, bool isConnected)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            IsStreamlabsConnected = isConnected;
+            StreamlabsStatus = isConnected ? "Connected" : "Disconnected";
+        });
+    }
+
+    private void OnStreamlabsError(object? sender, string error)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            StreamlabsStatus = error;
+        });
+    }
+
+    private void OnReplaySaved(object? sender, EventArgs e)
+    {
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+        {
+            StreamlabsStatus = "Replay saved!";
+        });
+    }
+
+    [RelayCommand]
+    private async Task ConnectStreamlabsAsync()
+    {
+        if (string.IsNullOrEmpty(Settings.StreamlabsToken))
+        {
+            StreamlabsStatus = "No token configured";
+            return;
+        }
+
+        StreamlabsStatus = "Connecting...";
+        App.Streamlabs.SetToken(Settings.StreamlabsToken);
+        var success = await App.Streamlabs.ConnectAsync();
+
+        if (!success)
+        {
+            StreamlabsStatus = App.Streamlabs.LastError ?? "Connection failed";
+        }
+    }
+
+    [RelayCommand]
+    private async Task DisconnectStreamlabsAsync()
+    {
+        await App.Streamlabs.DisconnectAsync();
+        StreamlabsStatus = "Disconnected";
+    }
+
+    [RelayCommand]
+    private async Task SaveReplayAsync()
+    {
+        if (!IsStreamlabsConnected)
+        {
+            StreamlabsStatus = "Not connected";
+            return;
+        }
+
+        StreamlabsStatus = "Saving replay...";
+        var success = await App.Streamlabs.SaveReplayAsync();
+
+        if (!success)
+        {
+            StreamlabsStatus = App.Streamlabs.LastError ?? "Failed to save replay";
+        }
+    }
+
+    public async Task SaveStreamlabsSettingsAsync(string token, bool autoConnect, string replayScene)
+    {
+        Settings.StreamlabsToken = token;
+        Settings.StreamlabsAutoConnect = autoConnect;
+        Settings.StreamlabsReplayScene = replayScene;
+        await App.Database.SaveAppSettingsAsync(Settings);
+
+        // Update the service token
+        App.Streamlabs.SetToken(token);
     }
 }
