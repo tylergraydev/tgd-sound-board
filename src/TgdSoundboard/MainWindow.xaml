@@ -7,6 +7,7 @@
         xmlns:local="clr-namespace:TgdSoundboard"
         mc:Ignorable="d"
         Title="TGD Soundboard"
+        Icon="app.ico"
         Height="750" Width="1200"
         MinHeight="550" MinWidth="900"
         Background="{DynamicResource ThemeBgPrimaryBrush}"
@@ -60,8 +61,59 @@
                 <!-- Header Content -->
                 <DockPanel Grid.Row="1" Margin="20,0,20,16">
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                        <Border Background="{DynamicResource ThemeAccentGradient}" CornerRadius="8" Padding="8,4" VerticalAlignment="Center">
-                            <materialDesign:PackIcon Kind="MusicNote" Width="24" Height="24"/>
+                        <!-- Neon Pulse Logo -->
+                        <Border Background="#12121c" CornerRadius="8" Padding="6" VerticalAlignment="Center" Width="40" Height="40">
+                            <Canvas Width="28" Height="28">
+                                <!-- Audio bars with neon gradients -->
+                                <Rectangle Canvas.Left="1" Canvas.Top="11" Width="3" Height="9" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#00f0ff" Offset="0"/>
+                                            <GradientStop Color="#00c4cc" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <Rectangle Canvas.Left="6" Canvas.Top="6" Width="3" Height="16" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#00f0ff" Offset="0"/>
+                                            <GradientStop Color="#8844ff" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <Rectangle Canvas.Left="11" Canvas.Top="8" Width="3" Height="12" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#8844ff" Offset="0"/>
+                                            <GradientStop Color="#ff00aa" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <Rectangle Canvas.Left="16" Canvas.Top="3" Width="3" Height="22" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#8844ff" Offset="0"/>
+                                            <GradientStop Color="#ff00aa" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <Rectangle Canvas.Left="21" Canvas.Top="7" Width="3" Height="14" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#ff00aa" Offset="0"/>
+                                            <GradientStop Color="#ff0066" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                                <Rectangle Canvas.Left="26" Canvas.Top="10" Width="3" Height="8" RadiusX="1.5" RadiusY="1.5">
+                                    <Rectangle.Fill>
+                                        <LinearGradientBrush StartPoint="0,0" EndPoint="0,1">
+                                            <GradientStop Color="#ff00aa" Offset="0"/>
+                                            <GradientStop Color="#ff0066" Offset="1"/>
+                                        </LinearGradientBrush>
+                                    </Rectangle.Fill>
+                                </Rectangle>
+                            </Canvas>
                         </Border>
                         <TextBlock Text="TGD SOUNDBOARD" FontSize="18" FontWeight="Bold" Margin="12,0,0,0" VerticalAlignment="Center"/>
                     </StackPanel>
@@ -109,6 +161,22 @@
                                            Foreground="{DynamicResource ThemeTextSecondaryBrush}"/>
                             </StackPanel>
                         </Border>
+
+                        <!-- Queue Button -->
+                        <Button x:Name="QueueButton"
+                                Click="ShowQueue_Click"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Background="{DynamicResource ThemeBgTertiaryBrush}"
+                                Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                                Padding="12,6"
+                                Margin="0,0,12,0"
+                                materialDesign:ButtonAssist.CornerRadius="8"
+                                Visibility="{Binding HasQueuedClips, Converter={StaticResource BooleanToVisibilityConverter}}">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="PlaylistPlay" VerticalAlignment="Center"/>
+                                <TextBlock Text="{Binding QueueCount, StringFormat=Queue ({0})}" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
                         <!-- Stop All Button -->
                         <Button Click="StopAll_Click"
@@ -208,6 +276,7 @@
             <Grid Grid.Column="1" Background="{DynamicResource ThemeBgPrimaryBrush}">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
@@ -227,6 +296,40 @@
                         </StackPanel>
 
                         <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                            <!-- Search Box -->
+                            <Border Background="{DynamicResource ThemeBgTertiaryBrush}"
+                                    CornerRadius="8"
+                                    Padding="8,4"
+                                    Margin="0,0,12,0"
+                                    VerticalAlignment="Center">
+                                <StackPanel Orientation="Horizontal">
+                                    <materialDesign:PackIcon Kind="Magnify"
+                                                             VerticalAlignment="Center"
+                                                             Foreground="{DynamicResource ThemeTextMutedBrush}"
+                                                             Margin="0,0,8,0"/>
+                                    <TextBox x:Name="SearchBox"
+                                             Width="150"
+                                             BorderThickness="0"
+                                             Background="Transparent"
+                                             Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                                             materialDesign:HintAssist.Hint="Search clips..."
+                                             materialDesign:HintAssist.Foreground="{DynamicResource ThemeTextMutedBrush}"
+                                             materialDesign:TextFieldAssist.DecorationVisibility="Hidden"
+                                             VerticalAlignment="Center"
+                                             TextChanged="SearchBox_TextChanged"/>
+                                </StackPanel>
+                            </Border>
+                            <!-- Random Play -->
+                            <Button Click="RandomPlay_Click"
+                                    Style="{StaticResource MaterialDesignFlatButton}"
+                                    Background="{DynamicResource ThemeBgTertiaryBrush}"
+                                    Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                                    Padding="10,8"
+                                    Margin="0,0,8,0"
+                                    ToolTip="Play Random Clip"
+                                    materialDesign:ButtonAssist.CornerRadius="8">
+                                <materialDesign:PackIcon Kind="Shuffle" VerticalAlignment="Center"/>
+                            </Button>
                             <Button Click="ImportAndTrim_Click"
                                     Style="{StaticResource MaterialDesignFlatButton}"
                                     Background="{DynamicResource ThemeBgTertiaryBrush}"
@@ -244,18 +347,80 @@
                                     Background="{DynamicResource ThemeAccentBrush}"
                                     Foreground="White"
                                     Padding="14,8"
+                                    Margin="0,0,8,0"
                                     materialDesign:ButtonAssist.CornerRadius="8">
                                 <StackPanel Orientation="Horizontal">
                                     <materialDesign:PackIcon Kind="Upload" VerticalAlignment="Center"/>
                                     <TextBlock Text="Import" Margin="8,0,0,0" VerticalAlignment="Center"/>
                                 </StackPanel>
                             </Button>
+                            <!-- More menu for import/export config -->
+                            <Menu Background="Transparent">
+                                <MenuItem Padding="0">
+                                    <MenuItem.Header>
+                                        <Border Background="{DynamicResource ThemeBgTertiaryBrush}"
+                                                CornerRadius="8"
+                                                Padding="10,8">
+                                            <materialDesign:PackIcon Kind="DotsVertical"/>
+                                        </Border>
+                                    </MenuItem.Header>
+                                    <MenuItem Header="Export Config" Click="ExportConfig_Click">
+                                        <MenuItem.Icon>
+                                            <materialDesign:PackIcon Kind="Export"/>
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                    <MenuItem Header="Import Config" Click="ImportConfig_Click">
+                                        <MenuItem.Icon>
+                                            <materialDesign:PackIcon Kind="Import"/>
+                                        </MenuItem.Icon>
+                                    </MenuItem>
+                                </MenuItem>
+                            </Menu>
                         </StackPanel>
                     </DockPanel>
                 </Border>
 
+                <!-- Favorites Bar -->
+                <Border Grid.Row="1"
+                        Background="{DynamicResource ThemeBgTertiaryBrush}"
+                        Padding="12,8"
+                        Visibility="{Binding HasFavorites, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Star" Foreground="#FFD700" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                            <TextBlock Text="Favorites" FontWeight="Medium" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                        </StackPanel>
+                        <ItemsControl ItemsSource="{Binding FavoriteClips}">
+                            <ItemsControl.ItemsPanel>
+                                <ItemsPanelTemplate>
+                                    <StackPanel Orientation="Horizontal"/>
+                                </ItemsPanelTemplate>
+                            </ItemsControl.ItemsPanel>
+                            <ItemsControl.ItemTemplate>
+                                <DataTemplate>
+                                    <Button Click="FavoriteClip_Click"
+                                            Style="{StaticResource MaterialDesignFlatButton}"
+                                            Padding="8,4"
+                                            Margin="0,0,4,0"
+                                            materialDesign:ButtonAssist.CornerRadius="4"
+                                            ToolTip="{Binding Name}">
+                                        <StackPanel Orientation="Horizontal">
+                                            <Ellipse Width="8" Height="8" Margin="0,0,6,0">
+                                                <Ellipse.Fill>
+                                                    <SolidColorBrush Color="{Binding Color}"/>
+                                                </Ellipse.Fill>
+                                            </Ellipse>
+                                            <TextBlock Text="{Binding Name}" MaxWidth="80" TextTrimming="CharacterEllipsis"/>
+                                        </StackPanel>
+                                    </Button>
+                                </DataTemplate>
+                            </ItemsControl.ItemTemplate>
+                        </ItemsControl>
+                    </DockPanel>
+                </Border>
+
                 <!-- Clips Grid -->
-                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="16">
+                <ScrollViewer Grid.Row="2" VerticalScrollBarVisibility="Auto" Padding="16">
                     <ItemsControl ItemsSource="{Binding SelectedCategory.Clips}">
                         <ItemsControl.ItemsPanel>
                             <ItemsPanelTemplate>
@@ -269,6 +434,10 @@
                                         CornerRadius="{DynamicResource ThemeCornerRadius}"
                                         Cursor="Hand"
                                         MouseLeftButtonDown="ClipCard_Click"
+                                        MouseMove="ClipCard_MouseMove"
+                                        AllowDrop="True"
+                                        DragOver="ClipCard_DragOver"
+                                        Drop="ClipCard_Drop"
                                         Background="{DynamicResource ThemeBgCardBrush}"
                                         BorderThickness="2"
                                         x:Name="ClipBorder">
@@ -276,19 +445,37 @@
                                         <SolidColorBrush Color="Transparent"/>
                                     </Border.BorderBrush>
                                     <Grid>
+                                        <!-- Loop indicator -->
+                                        <materialDesign:PackIcon Kind="Repeat"
+                                                                 Width="14" Height="14"
+                                                                 HorizontalAlignment="Left"
+                                                                 VerticalAlignment="Top"
+                                                                 Margin="6"
+                                                                 Foreground="{DynamicResource ThemeAccentBrush}"
+                                                                 Visibility="{Binding IsLooping, Converter={StaticResource BooleanToVisibilityConverter}}"/>
+                                        <!-- Favorite indicator -->
+                                        <materialDesign:PackIcon Kind="Star"
+                                                                 Width="14" Height="14"
+                                                                 HorizontalAlignment="Right"
+                                                                 VerticalAlignment="Top"
+                                                                 Margin="6"
+                                                                 Foreground="#FFD700"
+                                                                 Visibility="{Binding IsFavorite, Converter={StaticResource BooleanToVisibilityConverter}}"/>
                                         <StackPanel VerticalAlignment="Center" HorizontalAlignment="Center">
-                                            <!-- Play/Stop Icon -->
+                                            <!-- Play/Stop Icon with clip color -->
                                             <Border x:Name="IconBorder"
                                                     Width="40" Height="40"
                                                     CornerRadius="20"
-                                                    Background="{DynamicResource ThemeBgTertiaryBrush}"
                                                     HorizontalAlignment="Center">
+                                                <Border.Background>
+                                                    <SolidColorBrush Color="{Binding Color}"/>
+                                                </Border.Background>
                                                 <materialDesign:PackIcon x:Name="PlayIcon"
                                                                          Kind="Play"
                                                                          Width="20" Height="20"
                                                                          HorizontalAlignment="Center"
                                                                          VerticalAlignment="Center"
-                                                                         Foreground="{DynamicResource ThemeTextSecondaryBrush}"/>
+                                                                         Foreground="White"/>
                                             </Border>
 
                                             <!-- Name -->
@@ -318,6 +505,151 @@
                                                         <materialDesign:PackIcon Kind="Pencil"/>
                                                     </MenuItem.Icon>
                                                 </MenuItem>
+                                                <MenuItem Header="Duplicate" Click="DuplicateClip_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="ContentCopy"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Set Hotkey" Click="SetHotkey_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="Keyboard"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Volume" StaysOpenOnClick="True">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="VolumeHigh"/>
+                                                    </MenuItem.Icon>
+                                                    <StackPanel Orientation="Horizontal" Margin="8,4">
+                                                        <Slider Width="120"
+                                                                Minimum="0" Maximum="1"
+                                                                Value="{Binding Volume}"
+                                                                ValueChanged="ClipVolume_Changed"
+                                                                TickFrequency="0.1"
+                                                                IsSnapToTickEnabled="False"/>
+                                                        <TextBlock Text="{Binding Volume, StringFormat={}{0:P0}}"
+                                                                   Width="40"
+                                                                   Margin="8,0,0,0"
+                                                                   VerticalAlignment="Center"/>
+                                                    </StackPanel>
+                                                </MenuItem>
+                                                <MenuItem Header="Color">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="Palette"/>
+                                                    </MenuItem.Icon>
+                                                    <MenuItem Header="Purple" Click="SetClipColor_Click" Tag="#9D4EDD">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#9D4EDD"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Pink" Click="SetClipColor_Click" Tag="#E91E63">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#E91E63"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Red" Click="SetClipColor_Click" Tag="#F44336">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#F44336"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Orange" Click="SetClipColor_Click" Tag="#FF9800">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#FF9800"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Yellow" Click="SetClipColor_Click" Tag="#FFEB3B">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#FFEB3B"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Green" Click="SetClipColor_Click" Tag="#4CAF50">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#4CAF50"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Teal" Click="SetClipColor_Click" Tag="#00BCD4">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#00BCD4"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Blue" Click="SetClipColor_Click" Tag="#2196F3">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#2196F3"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                    <MenuItem Header="Gray" Click="SetClipColor_Click" Tag="#607D8B">
+                                                        <MenuItem.Icon>
+                                                            <Ellipse Width="16" Height="16" Fill="#607D8B"/>
+                                                        </MenuItem.Icon>
+                                                    </MenuItem>
+                                                </MenuItem>
+                                                <Separator/>
+                                                <MenuItem Header="Loop" IsCheckable="True" IsChecked="{Binding IsLooping}" Click="ToggleLoop_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="Repeat"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Favorite" IsCheckable="True" IsChecked="{Binding IsFavorite}" Click="ToggleFavorite_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="Star"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Fade Effects">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="TransitionMasked"/>
+                                                    </MenuItem.Icon>
+                                                    <StackPanel Margin="8,4" Width="180">
+                                                        <TextBlock Text="Fade In (seconds)" FontSize="11" Margin="0,0,0,4"/>
+                                                        <Slider Minimum="0" Maximum="3"
+                                                                Value="{Binding FadeInSeconds}"
+                                                                ValueChanged="FadeIn_Changed"
+                                                                TickFrequency="0.5"
+                                                                IsSnapToTickEnabled="True"/>
+                                                        <TextBlock Text="Fade Out (seconds)" FontSize="11" Margin="0,8,0,4"/>
+                                                        <Slider Minimum="0" Maximum="3"
+                                                                Value="{Binding FadeOutSeconds}"
+                                                                ValueChanged="FadeOut_Changed"
+                                                                TickFrequency="0.5"
+                                                                IsSnapToTickEnabled="True"/>
+                                                    </StackPanel>
+                                                </MenuItem>
+                                                <MenuItem Header="Speed/Pitch">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="Speedometer"/>
+                                                    </MenuItem.Icon>
+                                                    <StackPanel Margin="8,4" Width="200">
+                                                        <DockPanel>
+                                                            <TextBlock Text="Speed" FontSize="11" DockPanel.Dock="Left"/>
+                                                            <TextBlock Text="{Binding PlaybackSpeed, StringFormat={}{0:0.0}x}" FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                                                        </DockPanel>
+                                                        <Slider Minimum="0.5" Maximum="2.0"
+                                                                Value="{Binding PlaybackSpeed}"
+                                                                ValueChanged="PlaybackSpeed_Changed"
+                                                                TickFrequency="0.1"
+                                                                IsSnapToTickEnabled="True"
+                                                                Margin="0,4,0,8"/>
+                                                        <DockPanel>
+                                                            <TextBlock Text="Pitch" FontSize="11" DockPanel.Dock="Left"/>
+                                                            <TextBlock FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                                                <TextBlock.Text>
+                                                                    <Binding Path="PitchSemitones" StringFormat="{}{0:+#;-#;0} semitones"/>
+                                                                </TextBlock.Text>
+                                                            </TextBlock>
+                                                        </DockPanel>
+                                                        <Slider Minimum="-12" Maximum="12"
+                                                                Value="{Binding PitchSemitones}"
+                                                                ValueChanged="PitchSemitones_Changed"
+                                                                TickFrequency="1"
+                                                                IsSnapToTickEnabled="True"
+                                                                Margin="0,4,0,0"/>
+                                                    </StackPanel>
+                                                </MenuItem>
+                                                <Separator/>
+                                                <MenuItem Header="Add to Queue" Click="AddToQueue_Click">
+                                                    <MenuItem.Icon>
+                                                        <materialDesign:PackIcon Kind="PlaylistPlus"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <Separator/>
                                                 <MenuItem Header="Delete" Click="DeleteClip_Click">
                                                     <MenuItem.Icon>
                                                         <materialDesign:PackIcon Kind="Delete"/>
@@ -341,7 +673,7 @@
                 </ScrollViewer>
 
                 <!-- Empty state -->
-                <Border Grid.Row="1"
+                <Border Grid.Row="2"
                         Visibility="{Binding SelectedCategory.Clips.Count, Converter={StaticResource ZeroToVisible}, FallbackValue=Visible}">
                     <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
                         <Border Background="{DynamicResource ThemeBgTertiaryBrush}" Width="64" Height="64" CornerRadius="32">

@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text.Json;
 using Dapper;
 using Microsoft.Data.Sqlite;
 using TgdSoundboard.Models;
@@ -55,12 +56,28 @@ public class DatabaseService
             );
         ");
 
+        // Migration: Add new columns if they don't exist
+        MigrateDatabase(connection);
+
         // Create default category if none exist
         var categoryCount = connection.ExecuteScalar<int>("SELECT COUNT(*) FROM Categories");
         if (categoryCount == 0)
         {
             connection.Execute("INSERT INTO Categories (Name, Color, SortOrder) VALUES ('General', '#4CAF50', 0)");
         }
+    }
+
+    private void MigrateDatabase(SqliteConnection connection)
+    {
+        // Check and add IsLooping column
+        var columns = connection.Query<string>("PRAGMA table_info(SoundClips)").ToList();
+
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN IsLooping INTEGER DEFAULT 0"); } catch { }
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN IsFavorite INTEGER DEFAULT 0"); } catch { }
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN FadeInSeconds REAL DEFAULT 0"); } catch { }
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN FadeOutSeconds REAL DEFAULT 0"); } catch { }
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN PlaybackSpeed REAL DEFAULT 1.0"); } catch { }
+        try { connection.Execute("ALTER TABLE SoundClips ADD COLUMN PitchSemitones INTEGER DEFAULT 0"); } catch { }
     }
 
     public async Task<List<Category>> GetCategoriesAsync()
@@ -96,7 +113,13 @@ public class DatabaseService
             Volume = dto.Volume,
             SortOrder = dto.SortOrder,
             Duration = TimeSpan.FromTicks(dto.DurationTicks),
-            CreatedAt = DateTime.Parse(dto.CreatedAt)
+            CreatedAt = DateTime.Parse(dto.CreatedAt),
+            IsLooping = dto.IsLooping,
+            IsFavorite = dto.IsFavorite,
+            FadeInSeconds = dto.FadeInSeconds,
+            FadeOutSeconds = dto.FadeOutSeconds,
+            PlaybackSpeed = dto.PlaybackSpeed == 0 ? 1.0f : dto.PlaybackSpeed,
+            PitchSemitones = dto.PitchSemitones
         }).ToList();
     }
 
@@ -140,8 +163,8 @@ public class DatabaseService
         clip.SortOrder = maxOrder + 1;
 
         var id = await connection.ExecuteScalarAsync<int>(@"
-            INSERT INTO SoundClips (Name, FilePath, CategoryId, Hotkey, Color, Volume, SortOrder, DurationTicks, CreatedAt)
-            VALUES (@Name, @FilePath, @CategoryId, @Hotkey, @Color, @Volume, @SortOrder, @DurationTicks, @CreatedAt);
+            INSERT INTO SoundClips (Name, FilePath, CategoryId, Hotkey, Color, Volume, SortOrder, DurationTicks, CreatedAt, IsLooping, IsFavorite, FadeInSeconds, FadeOutSeconds, PlaybackSpeed, PitchSemitones)
+            VALUES (@Name, @FilePath, @CategoryId, @Hotkey, @Color, @Volume, @SortOrder, @DurationTicks, @CreatedAt, @IsLooping, @IsFavorite, @FadeInSeconds, @FadeOutSeconds, @PlaybackSpeed, @PitchSemitones);
             SELECT last_insert_rowid();",
             new
             {
@@ -153,7 +176,13 @@ public class DatabaseService
                 clip.Volume,
                 clip.SortOrder,
                 DurationTicks = clip.Duration.Ticks,
-                CreatedAt = clip.CreatedAt.ToString("O")
+                CreatedAt = clip.CreatedAt.ToString("O"),
+                clip.IsLooping,
+                clip.IsFavorite,
+                clip.FadeInSeconds,
+                clip.FadeOutSeconds,
+                clip.PlaybackSpeed,
+                clip.PitchSemitones
             });
 
         clip.Id = id;
@@ -167,7 +196,10 @@ public class DatabaseService
             UPDATE SoundClips SET
                 Name = @Name, FilePath = @FilePath, CategoryId = @CategoryId,
                 Hotkey = @Hotkey, Color = @Color, Volume = @Volume,
-                SortOrder = @SortOrder, DurationTicks = @DurationTicks
+                SortOrder = @SortOrder, DurationTicks = @DurationTicks,
+                IsLooping = @IsLooping, IsFavorite = @IsFavorite,
+                FadeInSeconds = @FadeInSeconds, FadeOutSeconds = @FadeOutSeconds,
+                PlaybackSpeed = @PlaybackSpeed, PitchSemitones = @PitchSemitones
             WHERE Id = @Id",
             new
             {
@@ -179,7 +211,13 @@ public class DatabaseService
                 clip.Color,
                 clip.Volume,
                 clip.SortOrder,
-                DurationTicks = clip.Duration.Ticks
+                DurationTicks = clip.Duration.Ticks,
+                clip.IsLooping,
+                clip.IsFavorite,
+                clip.FadeInSeconds,
+                clip.FadeOutSeconds,
+                clip.PlaybackSpeed,
+                clip.PitchSemitones
             });
     }
 
@@ -239,6 +277,70 @@ public class DatabaseService
         await SetSettingAsync("Theme", settings.Theme);
     }
 
+    public async Task ExportConfigAsync(string filePath)
+    {
+        var categories = await GetCategoriesAsync();
+        var config = new SoundboardConfig
+        {
+            ExportDate = DateTime.Now,
+            Categories = categories.Select(c => new CategoryExport
+            {
+                Name = c.Name,
+                Color = c.Color,
+                SortOrder = c.SortOrder,
+                Clips = c.Clips.Select(clip => new ClipExport
+                {
+                    Name = clip.Name,
+                    FileName = Path.GetFileName(clip.FilePath),
+                    Hotkey = clip.Hotkey,
+                    Color = clip.Color,
+                    Volume = clip.Volume,
+                    SortOrder = clip.SortOrder,
+                    IsLooping = clip.IsLooping,
+                    IsFavorite = clip.IsFavorite,
+                    FadeInSeconds = clip.FadeInSeconds,
+                    FadeOutSeconds = clip.FadeOutSeconds
+                }).ToList()
+            }).ToList()
+        };
+
+        var json = JsonSerializer.Serialize(config, new JsonSerializerOptions { WriteIndented = true });
+        await File.WriteAllTextAsync(filePath, json);
+    }
+
+    public async Task ImportConfigAsync(string filePath)
+    {
+        var json = await File.ReadAllTextAsync(filePath);
+        var config = JsonSerializer.Deserialize<SoundboardConfig>(json);
+        if (config == null) return;
+
+        foreach (var categoryExport in config.Categories)
+        {
+            var category = await AddCategoryAsync(categoryExport.Name, categoryExport.Color);
+
+            foreach (var clipExport in categoryExport.Clips)
+            {
+                // Note: The actual audio file needs to be present in the clips directory
+                var clip = new SoundClip
+                {
+                    Name = clipExport.Name,
+                    FilePath = clipExport.FileName, // User will need to re-import files
+                    CategoryId = category.Id,
+                    Hotkey = clipExport.Hotkey,
+                    Color = clipExport.Color,
+                    Volume = clipExport.Volume,
+                    SortOrder = clipExport.SortOrder,
+                    IsLooping = clipExport.IsLooping,
+                    IsFavorite = clipExport.IsFavorite,
+                    FadeInSeconds = clipExport.FadeInSeconds,
+                    FadeOutSeconds = clipExport.FadeOutSeconds
+                };
+
+                await AddClipAsync(clip);
+            }
+        }
+    }
+
     private class SoundClipDto
     {
         public int Id { get; set; }
@@ -251,5 +353,39 @@ public class DatabaseService
         public int SortOrder { get; set; }
         public long DurationTicks { get; set; }
         public string CreatedAt { get; set; } = string.Empty;
+        public bool IsLooping { get; set; }
+        public bool IsFavorite { get; set; }
+        public float FadeInSeconds { get; set; }
+        public float FadeOutSeconds { get; set; }
+        public float PlaybackSpeed { get; set; }
+        public int PitchSemitones { get; set; }
+    }
+
+    private class SoundboardConfig
+    {
+        public DateTime ExportDate { get; set; }
+        public List<CategoryExport> Categories { get; set; } = new();
+    }
+
+    private class CategoryExport
+    {
+        public string Name { get; set; } = string.Empty;
+        public string Color { get; set; } = "#4CAF50";
+        public int SortOrder { get; set; }
+        public List<ClipExport> Clips { get; set; } = new();
+    }
+
+    private class ClipExport
+    {
+        public string Name { get; set; } = string.Empty;
+        public string FileName { get; set; } = string.Empty;
+        public string Hotkey { get; set; } = string.Empty;
+        public string Color { get; set; } = "#2196F3";
+        public float Volume { get; set; } = 1.0f;
+        public int SortOrder { get; set; }
+        public bool IsLooping { get; set; }
+        public bool IsFavorite { get; set; }
+        public float FadeInSeconds { get; set; }
+        public float FadeOutSeconds { get; set; }
     }
 }

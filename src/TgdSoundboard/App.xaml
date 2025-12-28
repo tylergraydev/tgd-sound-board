@@ -19,6 +19,7 @@
             <converters:TimeSpanToStringConverter x:Key="TimeSpanToString"/>
             <converters:BoolToPlayPauseConverter x:Key="BoolToPlayPause"/>
             <converters:LevelToHeightConverter x:Key="LevelToHeightConverter" MaxHeight="200"/>
+            <converters:InverseBoolToVisibilityConverter x:Key="InverseBoolToVisConverter"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>

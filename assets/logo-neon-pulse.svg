@@ -1,0 +1,35 @@
+<svg width="256" height="256" viewBox="0 0 256 256" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect width="256" height="256" rx="56" fill="#12121c"/>
+    <rect x="40" y="104" width="16" height="48" rx="8" fill="url(#neon1)"/>
+    <rect x="72" y="72" width="16" height="112" rx="8" fill="url(#neon2)"/>
+    <rect x="104" y="88" width="16" height="80" rx="8" fill="url(#neon3)"/>
+    <rect x="136" y="56" width="16" height="144" rx="8" fill="url(#neon4)"/>
+    <rect x="168" y="80" width="16" height="96" rx="8" fill="url(#neon5)"/>
+    <rect x="200" y="96" width="16" height="64" rx="8" fill="url(#neon6)"/>
+    <defs>
+        <linearGradient id="neon1" x1="48" y1="104" x2="48" y2="152" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00f0ff"/>
+            <stop offset="1" stop-color="#00c4cc"/>
+        </linearGradient>
+        <linearGradient id="neon2" x1="80" y1="72" x2="80" y2="184" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00f0ff"/>
+            <stop offset="1" stop-color="#8844ff"/>
+        </linearGradient>
+        <linearGradient id="neon3" x1="112" y1="88" x2="112" y2="168" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#8844ff"/>
+            <stop offset="1" stop-color="#ff00aa"/>
+        </linearGradient>
+        <linearGradient id="neon4" x1="144" y1="56" x2="144" y2="200" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#8844ff"/>
+            <stop offset="1" stop-color="#ff00aa"/>
+        </linearGradient>
+        <linearGradient id="neon5" x1="176" y1="80" x2="176" y2="176" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ff00aa"/>
+            <stop offset="1" stop-color="#ff0066"/>
+        </linearGradient>
+        <linearGradient id="neon6" x1="208" y1="96" x2="208" y2="160" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#ff00aa"/>
+            <stop offset="1" stop-color="#ff0066"/>
+        </linearGradient>
+    </defs>
+</svg>

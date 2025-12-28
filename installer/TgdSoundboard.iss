@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6.0 or later
 
 #define MyAppName "TGD Soundboard"
-#define MyAppVersion "1.4.0"
+#define MyAppVersion "1.5.0"
 #define MyAppPublisher "TGD"
 #define MyAppURL "https://github.com/tylergraydev/tgd-sound-board"
 #define MyAppExeName "TgdSoundboard.exe"
@@ -51,9 +51,9 @@ Name: "{group}\{cm:UninstallProgram,{#MyAppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\{#MyAppExeName}"; Tasks: desktopicon
 
 [Run]
-; Run VB-Cable installer if selected
-Filename: "{tmp}\VBCABLE_Setup_x64.exe"; Parameters: "-i -h"; StatusMsg: "Installing VB-Cable Virtual Audio Device..."; Flags: waituntilterminated runascurrentuser; Tasks: installvbcable; Check: IsWin64 and not IsVBCableInstalled
-Filename: "{tmp}\VBCABLE_Setup.exe"; Parameters: "-i -h"; StatusMsg: "Installing VB-Cable Virtual Audio Device..."; Flags: waituntilterminated runascurrentuser; Tasks: installvbcable; Check: not IsWin64 and not IsVBCableInstalled
+; Run VB-Cable installer if selected (requires user to click "Install Driver" in GUI)
+Filename: "{tmp}\VBCABLE_Setup_x64.exe"; StatusMsg: "Installing VB-Cable Virtual Audio Device (click 'Install Driver' in the window)..."; Flags: waituntilterminated shellexec; Tasks: installvbcable; Check: IsWin64 and not IsVBCableInstalled
+Filename: "{tmp}\VBCABLE_Setup.exe"; StatusMsg: "Installing VB-Cable Virtual Audio Device (click 'Install Driver' in the window)..."; Flags: waituntilterminated shellexec; Tasks: installvbcable; Check: not IsWin64 and not IsVBCableInstalled
 
 ; Launch app after install
 Filename: "{app}\{#MyAppExeName}"; Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
@@ -103,9 +103,10 @@ begin
   if CurStep = ssPostInstall then
   begin
     // Post-installation tasks if needed
-    if WizardIsTaskSelected('installvbcable') and not IsVBCableInstalled then
+    if WizardIsTaskSelected('installvbcable') then
     begin
-      MsgBox('VB-Cable has been installed. You may need to restart your computer for the audio device to appear.',
+      MsgBox('If you installed VB-Cable, you may need to restart your computer for the audio device to appear.' + #13#10 + #13#10 +
+             'After restart, set VB-Cable as your "Virtual Cable Device" in TGD Soundboard settings.',
              mbInformation, MB_OK);
     end;
   end;

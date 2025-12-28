@@ -10,6 +10,7 @@ public partial class App : Application
     public static AudioPlaybackService AudioPlayback { get; private set; } = null!;
     public static AudioRouterService AudioRouter { get; private set; } = null!;
     public static ClipStorageService ClipStorage { get; private set; } = null!;
+    public static GlobalHotkeyService GlobalHotkeys { get; private set; } = null!;
     public static MainViewModel MainViewModel { get; private set; } = null!;
 
     protected override async void OnStartup(StartupEventArgs e)
@@ -31,16 +32,46 @@ public partial class App : Application
         }
 
         ClipStorage = new ClipStorageService(settings.ClipsDirectory);
-        AudioPlayback = new AudioPlaybackService(settings.OutputDeviceId);
+        AudioPlayback = new AudioPlaybackService(settings.OutputDeviceId, settings.VirtualCableDeviceId);
         AudioRouter = new AudioRouterService();
+        GlobalHotkeys = new GlobalHotkeyService();
 
         // Initialize main view model
         MainViewModel = new MainViewModel();
         await MainViewModel.InitializeAsync();
+
+        // Initialize global hotkeys after window is loaded
+        if (MainWindow != null)
+        {
+            MainWindow.Loaded += (s, args) =>
+            {
+                GlobalHotkeys.Initialize((Window)MainWindow);
+                RegisterSavedHotkeys();
+            };
+        }
+    }
+
+    private void RegisterSavedHotkeys()
+    {
+        foreach (var category in MainViewModel.Categories)
+        {
+            foreach (var clip in category.Clips)
+            {
+                if (!string.IsNullOrEmpty(clip.Hotkey))
+                {
+                    var capturedClip = clip;
+                    GlobalHotkeys.RegisterHotkey(clip.Hotkey, () =>
+                    {
+                        Dispatcher.Invoke(() => MainViewModel.PlayClipCommand.Execute(capturedClip));
+                    });
+                }
+            }
+        }
     }
 
     protected override void OnExit(ExitEventArgs e)
     {
+        GlobalHotkeys?.Dispose();
         AudioPlayback?.Dispose();
         AudioRouter?.Dispose();
         base.OnExit(e);

@@ -54,11 +54,48 @@ public partial class MainViewModel : ObservableObject
     [ObservableProperty]
     private string? _clipEditorFilePath;
 
+    [ObservableProperty]
+    private string _searchFilter = string.Empty;
+
+    [ObservableProperty]
+    private ObservableCollection<SoundClip> _favoriteClips = new();
+
+    [ObservableProperty]
+    private bool _hasFavorites;
+
+    [ObservableProperty]
+    private ObservableCollection<SoundClip> _queuedClips = new();
+
+    [ObservableProperty]
+    private int _queueCount;
+
+    [ObservableProperty]
+    private bool _hasQueuedClips;
+
+    private Dictionary<int, List<SoundClip>> _allClips = new();
+
     public MainViewModel()
     {
         App.AudioPlayback.ClipStarted += OnClipStarted;
         App.AudioPlayback.ClipStopped += OnClipStopped;
         App.AudioRouter.RoutingStatusChanged += OnRoutingStatusChanged;
+        App.AudioPlayback.QueueChanged += OnQueueChanged;
+    }
+
+    private void OnQueueChanged(object? sender, EventArgs e)
+    {
+        RefreshQueue();
+    }
+
+    public void RefreshQueue()
+    {
+        QueuedClips.Clear();
+        foreach (var clip in App.AudioPlayback.GetQueue())
+        {
+            QueuedClips.Add(clip);
+        }
+        QueueCount = QueuedClips.Count;
+        HasQueuedClips = QueueCount > 0;
     }
 
     public async Task InitializeAsync()
@@ -84,6 +121,22 @@ public partial class MainViewModel : ObservableObject
 
         // Check for virtual cable
         IsVirtualCableAvailable = AudioRouterService.FindVirtualCableDevice() != null;
+
+        // Load favorites
+        RefreshFavorites();
+    }
+
+    public void RefreshFavorites()
+    {
+        FavoriteClips.Clear();
+        foreach (var category in Categories)
+        {
+            foreach (var clip in category.Clips.Where(c => c.IsFavorite))
+            {
+                FavoriteClips.Add(clip);
+            }
+        }
+        HasFavorites = FavoriteClips.Count > 0;
     }
 
     private void RefreshAudioDevices()
@@ -277,5 +330,54 @@ public partial class MainViewModel : ObservableObject
             if (clip != null) return clip;
         }
         return null;
+    }
+
+    public void FilterClips(string searchText)
+    {
+        SearchFilter = searchText;
+
+        // Store all clips on first filter
+        if (_allClips.Count == 0)
+        {
+            foreach (var category in Categories)
+            {
+                _allClips[category.Id] = category.Clips.ToList();
+            }
+        }
+
+        foreach (var category in Categories)
+        {
+            if (!_allClips.TryGetValue(category.Id, out var allCategoryClips))
+                continue;
+
+            category.Clips.Clear();
+
+            if (string.IsNullOrWhiteSpace(searchText))
+            {
+                // Show all clips
+                foreach (var clip in allCategoryClips.OrderBy(c => c.SortOrder))
+                {
+                    category.Clips.Add(clip);
+                }
+            }
+            else
+            {
+                // Show filtered clips
+                var filtered = allCategoryClips
+                    .Where(c => c.Name.Contains(searchText, StringComparison.OrdinalIgnoreCase))
+                    .OrderBy(c => c.SortOrder);
+
+                foreach (var clip in filtered)
+                {
+                    category.Clips.Add(clip);
+                }
+            }
+        }
+    }
+
+    public void ClearFilter()
+    {
+        FilterClips(string.Empty);
+        _allClips.Clear();
     }
 }

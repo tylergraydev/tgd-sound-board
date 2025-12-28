@@ -36,4 +36,22 @@ public partial class SoundClip : ObservableObject
 
     [ObservableProperty]
     private bool _isPlaying;
+
+    [ObservableProperty]
+    private bool _isLooping;
+
+    [ObservableProperty]
+    private bool _isFavorite;
+
+    [ObservableProperty]
+    private float _fadeInSeconds;
+
+    [ObservableProperty]
+    private float _fadeOutSeconds;
+
+    [ObservableProperty]
+    private float _playbackSpeed = 1.0f;
+
+    [ObservableProperty]
+    private int _pitchSemitones;
 }

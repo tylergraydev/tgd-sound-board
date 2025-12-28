@@ -10,6 +10,9 @@ namespace TgdSoundboard;
 
 public partial class MainWindow : Window
 {
+    private Point _dragStartPoint;
+    private SoundClip? _draggedClip;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -181,9 +184,32 @@ public partial class MainWindow : Window
 
     private void ClipCard_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        // Capture start point for drag detection
+        if (sender is FrameworkElement element)
         {
-            App.MainViewModel.PlayClipCommand.Execute(clip);
+            _dragStartPoint = e.GetPosition(element);
+        }
+
+        if (sender is FrameworkElement elem && elem.DataContext is SoundClip clip)
+        {
+            if (e.ClickCount == 2)
+            {
+                // Double-click to rename
+                e.Handled = true;
+                var dialog = new RenameDialog(clip.Name);
+                dialog.Owner = this;
+
+                if (dialog.ShowDialog() == true)
+                {
+                    clip.Name = dialog.ClipName;
+                    _ = App.Database.UpdateClipAsync(clip);
+                }
+            }
+            else
+            {
+                // Single-click to play
+                App.MainViewModel.PlayClipCommand.Execute(clip);
+            }
         }
     }
 
@@ -218,4 +244,370 @@ public partial class MainWindow : Window
             }
         }
     }
+
+    private async void SetClipColor_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem && menuItem.Tag is string color)
+        {
+            // Navigate up to find the clip from the context menu's placement target
+            var contextMenu = menuItem.Parent as MenuItem;
+            while (contextMenu?.Parent is MenuItem parent)
+            {
+                contextMenu = parent;
+            }
+
+            var rootMenu = contextMenu?.Parent as ContextMenu;
+            if (rootMenu?.PlacementTarget is FrameworkElement element && element.DataContext is SoundClip clip)
+            {
+                clip.Color = color;
+                await App.Database.UpdateClipAsync(clip);
+            }
+        }
+    }
+
+    private async void DuplicateClip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            // Create a copy with a new name
+            var newClip = new SoundClip
+            {
+                Name = clip.Name + " (Copy)",
+                FilePath = clip.FilePath,
+                CategoryId = clip.CategoryId,
+                Hotkey = string.Empty, // Don't copy hotkey to avoid conflicts
+                Color = clip.Color,
+                Volume = clip.Volume,
+                Duration = clip.Duration,
+                CreatedAt = DateTime.Now
+            };
+
+            var savedClip = await App.Database.AddClipAsync(newClip);
+
+            // Add to the current category's clips collection
+            var category = App.MainViewModel.Categories.FirstOrDefault(c => c.Id == clip.CategoryId);
+            category?.Clips.Add(savedClip);
+        }
+    }
+
+    #region Search/Filter
+
+    private void SearchBox_TextChanged(object sender, TextChangedEventArgs e)
+    {
+        var searchText = SearchBox.Text?.Trim().ToLowerInvariant() ?? string.Empty;
+        App.MainViewModel.FilterClips(searchText);
+    }
+
+    #endregion
+
+    #region Per-Clip Volume
+
+    private async void ClipVolume_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is Slider slider && slider.DataContext is SoundClip clip)
+        {
+            clip.Volume = (float)e.NewValue;
+            await App.Database.UpdateClipAsync(clip);
+
+            // Update volume if currently playing
+            App.AudioPlayback.SetClipVolume(clip.Id, clip.Volume);
+        }
+    }
+
+    #endregion
+
+    #region Hotkey
+
+    private async void SetHotkey_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            var dialog = new HotkeyDialog(clip.Hotkey);
+            dialog.Owner = this;
+
+            if (dialog.ShowDialog() == true)
+            {
+                // Unregister old hotkey
+                if (!string.IsNullOrEmpty(clip.Hotkey))
+                {
+                    App.GlobalHotkeys.UnregisterHotkey(clip.Hotkey);
+                }
+
+                clip.Hotkey = dialog.Hotkey;
+                await App.Database.UpdateClipAsync(clip);
+
+                // Register new hotkey
+                if (!string.IsNullOrEmpty(clip.Hotkey))
+                {
+                    App.GlobalHotkeys.RegisterHotkey(clip.Hotkey, () =>
+                    {
+                        Dispatcher.Invoke(() => App.MainViewModel.PlayClipCommand.Execute(clip));
+                    });
+                }
+            }
+        }
+    }
+
+    #endregion
+
+    #region Drag & Drop Reorder
+
+    private void ClipCard_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (e.LeftButton == MouseButtonState.Pressed && sender is FrameworkElement element)
+        {
+            var currentPos = e.GetPosition(element);
+            var diff = _dragStartPoint - currentPos;
+
+            // Only start drag if moved enough distance
+            if (Math.Abs(diff.X) > SystemParameters.MinimumHorizontalDragDistance ||
+                Math.Abs(diff.Y) > SystemParameters.MinimumVerticalDragDistance)
+            {
+                if (element.DataContext is SoundClip clip)
+                {
+                    _draggedClip = clip;
+                    var data = new DataObject("SoundClip", clip);
+                    DragDrop.DoDragDrop(element, data, DragDropEffects.Move);
+                    _draggedClip = null;
+                }
+            }
+        }
+    }
+
+    private void ClipCard_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent("SoundClip"))
+        {
+            e.Effects = DragDropEffects.Move;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+
+    private async void ClipCard_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent("SoundClip")) return;
+
+        var droppedClip = e.Data.GetData("SoundClip") as SoundClip;
+        if (droppedClip == null) return;
+
+        if (sender is FrameworkElement element && element.DataContext is SoundClip targetClip)
+        {
+            if (droppedClip.Id == targetClip.Id) return;
+            if (droppedClip.CategoryId != targetClip.CategoryId) return;
+
+            var category = App.MainViewModel.Categories.FirstOrDefault(c => c.Id == droppedClip.CategoryId);
+            if (category == null) return;
+
+            // Get current indices
+            var oldIndex = category.Clips.IndexOf(droppedClip);
+            var newIndex = category.Clips.IndexOf(targetClip);
+
+            if (oldIndex < 0 || newIndex < 0) return;
+
+            // Move the clip
+            category.Clips.Move(oldIndex, newIndex);
+
+            // Update sort orders in database
+            for (int i = 0; i < category.Clips.Count; i++)
+            {
+                category.Clips[i].SortOrder = i;
+                await App.Database.UpdateClipAsync(category.Clips[i]);
+            }
+        }
+
+        e.Handled = true;
+    }
+
+    #endregion
+
+    #region Loop, Favorite, Fade
+
+    private async void ToggleLoop_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem)
+        {
+            var contextMenu = menuItem.Parent as ContextMenu;
+            if (contextMenu?.PlacementTarget is FrameworkElement element && element.DataContext is SoundClip clip)
+            {
+                await App.Database.UpdateClipAsync(clip);
+            }
+        }
+    }
+
+    private async void ToggleFavorite_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is MenuItem menuItem)
+        {
+            var contextMenu = menuItem.Parent as ContextMenu;
+            if (contextMenu?.PlacementTarget is FrameworkElement element && element.DataContext is SoundClip clip)
+            {
+                await App.Database.UpdateClipAsync(clip);
+                App.MainViewModel.RefreshFavorites();
+            }
+        }
+    }
+
+    private async void FadeIn_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is Slider slider && slider.DataContext is SoundClip clip)
+        {
+            clip.FadeInSeconds = (float)e.NewValue;
+            await App.Database.UpdateClipAsync(clip);
+        }
+    }
+
+    private async void FadeOut_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is Slider slider && slider.DataContext is SoundClip clip)
+        {
+            clip.FadeOutSeconds = (float)e.NewValue;
+            await App.Database.UpdateClipAsync(clip);
+        }
+    }
+
+    #endregion
+
+    #region Favorites Bar
+
+    private void FavoriteClip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is Button button && button.DataContext is SoundClip clip)
+        {
+            App.MainViewModel.PlayClipCommand.Execute(clip);
+        }
+    }
+
+    #endregion
+
+    #region Random Play
+
+    private void RandomPlay_Click(object sender, RoutedEventArgs e)
+    {
+        var category = App.MainViewModel.SelectedCategory;
+        if (category == null || category.Clips.Count == 0) return;
+
+        var random = new Random();
+        var randomClip = category.Clips[random.Next(category.Clips.Count)];
+        App.MainViewModel.PlayClipCommand.Execute(randomClip);
+    }
+
+    #endregion
+
+    #region Import/Export Config
+
+    private async void ExportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.SaveFileDialog
+        {
+            Filter = "JSON Files|*.json",
+            Title = "Export Soundboard Config",
+            FileName = "soundboard_config.json"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            try
+            {
+                await App.Database.ExportConfigAsync(dialog.FileName);
+                MessageBox.Show("Configuration exported successfully!", "Export Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Export failed: {ex.Message}", "Export Error", MessageBoxButton.OK, MessageBoxImage.Error);
+            }
+        }
+    }
+
+    private async void ImportConfig_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new Microsoft.Win32.OpenFileDialog
+        {
+            Filter = "JSON Files|*.json",
+            Title = "Import Soundboard Config"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            var result = MessageBox.Show(
+                "This will merge the imported configuration with your existing setup. Continue?",
+                "Import Config",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                try
+                {
+                    await App.Database.ImportConfigAsync(dialog.FileName);
+
+                    // Reload categories
+                    var categories = await App.Database.GetCategoriesAsync();
+                    App.MainViewModel.Categories.Clear();
+                    foreach (var category in categories)
+                    {
+                        App.MainViewModel.Categories.Add(category);
+                    }
+
+                    if (App.MainViewModel.Categories.Count > 0)
+                    {
+                        App.MainViewModel.SelectedCategory = App.MainViewModel.Categories[0];
+                    }
+
+                    App.MainViewModel.RefreshFavorites();
+                    MessageBox.Show("Configuration imported successfully!", "Import Complete", MessageBoxButton.OK, MessageBoxImage.Information);
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Import failed: {ex.Message}", "Import Error", MessageBoxButton.OK, MessageBoxImage.Error);
+                }
+            }
+        }
+    }
+
+    #endregion
+
+    #region Speed/Pitch
+
+    private async void PlaybackSpeed_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is Slider slider && slider.DataContext is SoundClip clip)
+        {
+            clip.PlaybackSpeed = (float)e.NewValue;
+            await App.Database.UpdateClipAsync(clip);
+        }
+    }
+
+    private async void PitchSemitones_Changed(object sender, RoutedPropertyChangedEventArgs<double> e)
+    {
+        if (sender is Slider slider && slider.DataContext is SoundClip clip)
+        {
+            clip.PitchSemitones = (int)e.NewValue;
+            await App.Database.UpdateClipAsync(clip);
+        }
+    }
+
+    #endregion
+
+    #region Queue
+
+    private void AddToQueue_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            App.AudioPlayback.AddToQueue(clip);
+        }
+    }
+
+    private void ShowQueue_Click(object sender, RoutedEventArgs e)
+    {
+        var queueWindow = new QueueWindow();
+        queueWindow.Owner = this;
+        queueWindow.Show();
+    }
+
+    #endregion
 }

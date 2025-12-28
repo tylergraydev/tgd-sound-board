@@ -20,6 +20,9 @@ public class UpdateService
         AutoUpdater.RemindLaterTimeSpan = RemindLaterFormat.Days;
         AutoUpdater.RemindLaterAt = 1;
 
+        // Explicitly set the installed version from assembly
+        AutoUpdater.InstalledVersion = Assembly.GetExecutingAssembly().GetName().Version;
+
         // Customize the update dialog
         AutoUpdater.AppTitle = "TGD Soundboard";
 
