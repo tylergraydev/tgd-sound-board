@@ -16,6 +16,9 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Initialize theme service with default theme
+        ThemeService.Initialize(AppTheme.Neon);
+
         // Initialize update service and check for updates
         UpdateService.Initialize();
         UpdateService.CheckForUpdates(silent: true);
@@ -23,6 +26,12 @@ public partial class App : Application
         // Initialize services
         Database = new DatabaseService();
         var settings = await Database.GetAppSettingsAsync();
+
+        // Apply saved theme if available
+        if (!string.IsNullOrEmpty(settings.Theme) && Enum.TryParse<AppTheme>(settings.Theme, out var savedTheme))
+        {
+            ThemeService.CurrentTheme = savedTheme;
+        }
 
         ClipStorage = new ClipStorageService(settings.ClipsDirectory);
         AudioPlayback = new AudioPlaybackService(settings.OutputDeviceId);

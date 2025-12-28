@@ -1,0 +1,88 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Neon Theme - Cyberpunk style with pink/cyan gradients and glow effects -->
+
+    <!-- Primary Colors -->
+    <Color x:Key="ThemeAccent">#FF006E</Color>
+    <Color x:Key="ThemeAccentLight">#FF4D94</Color>
+    <Color x:Key="ThemeAccentDark">#CC0058</Color>
+    <Color x:Key="ThemeSecondary">#00D4FF</Color>
+
+    <!-- Background Colors -->
+    <Color x:Key="ThemeBgPrimary">#0A0A12</Color>
+    <Color x:Key="ThemeBgSecondary">#12121C</Color>
+    <Color x:Key="ThemeBgTertiary">#1A1A28</Color>
+    <Color x:Key="ThemeBgCard">#161624</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="ThemeTextPrimary">#FFFFFF</Color>
+    <Color x:Key="ThemeTextSecondary">#B0B0C0</Color>
+    <Color x:Key="ThemeTextMuted">#606070</Color>
+
+    <!-- Status Colors -->
+    <Color x:Key="ThemeSuccess">#00FF87</Color>
+    <Color x:Key="ThemeDanger">#FF006E</Color>
+    <Color x:Key="ThemeWarning">#FFB800</Color>
+
+    <!-- Playing State -->
+    <Color x:Key="ThemePlaying">#FF006E</Color>
+    <Color x:Key="ThemePlayingGlow">#FF006E</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="ThemeAccentBrush" Color="{StaticResource ThemeAccent}"/>
+    <SolidColorBrush x:Key="ThemeAccentLightBrush" Color="{StaticResource ThemeAccentLight}"/>
+    <SolidColorBrush x:Key="ThemeAccentDarkBrush" Color="{StaticResource ThemeAccentDark}"/>
+    <SolidColorBrush x:Key="ThemeSecondaryBrush" Color="{StaticResource ThemeSecondary}"/>
+
+    <SolidColorBrush x:Key="ThemeBgPrimaryBrush" Color="{StaticResource ThemeBgPrimary}"/>
+    <SolidColorBrush x:Key="ThemeBgSecondaryBrush" Color="{StaticResource ThemeBgSecondary}"/>
+    <SolidColorBrush x:Key="ThemeBgTertiaryBrush" Color="{StaticResource ThemeBgTertiary}"/>
+    <SolidColorBrush x:Key="ThemeBgCardBrush" Color="{StaticResource ThemeBgCard}"/>
+
+    <SolidColorBrush x:Key="ThemeTextPrimaryBrush" Color="{StaticResource ThemeTextPrimary}"/>
+    <SolidColorBrush x:Key="ThemeTextSecondaryBrush" Color="{StaticResource ThemeTextSecondary}"/>
+    <SolidColorBrush x:Key="ThemeTextMutedBrush" Color="{StaticResource ThemeTextMuted}"/>
+
+    <SolidColorBrush x:Key="ThemeSuccessBrush" Color="{StaticResource ThemeSuccess}"/>
+    <SolidColorBrush x:Key="ThemeDangerBrush" Color="{StaticResource ThemeDanger}"/>
+    <SolidColorBrush x:Key="ThemeWarningBrush" Color="{StaticResource ThemeWarning}"/>
+
+    <SolidColorBrush x:Key="ThemePlayingBrush" Color="{StaticResource ThemePlaying}"/>
+
+    <!-- Header Gradient - Vibrant for Neon theme -->
+    <LinearGradientBrush x:Key="ThemeHeaderGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#12121C" Offset="0"/>
+        <GradientStop Color="#1A1A28" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Accent Gradient (Pink to Cyan) -->
+    <LinearGradientBrush x:Key="ThemeAccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF006E" Offset="0"/>
+        <GradientStop Color="#00D4FF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Playing Gradient -->
+    <LinearGradientBrush x:Key="ThemePlayingGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF006E" Offset="0"/>
+        <GradientStop Color="#FF4D94" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Icon Gradient (for header icon) -->
+    <LinearGradientBrush x:Key="ThemeIconGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#FF006E" Offset="0"/>
+        <GradientStop Color="#00D4FF" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Card Border for selected/playing -->
+    <SolidColorBrush x:Key="ThemeCardBorderBrush" Color="{StaticResource ThemeAccent}"/>
+
+    <!-- UI Element Settings -->
+    <CornerRadius x:Key="ThemeCornerRadius">10</CornerRadius>
+    <CornerRadius x:Key="ThemeCornerRadiusLarge">16</CornerRadius>
+    <Thickness x:Key="ThemeCardBorderThickness">2</Thickness>
+
+    <!-- Glow Effect Opacity (0.5 = visible glow) -->
+    <sys:Double x:Key="ThemeGlowOpacity" xmlns:sys="clr-namespace:System;assembly=mscorlib">0.5</sys:Double>
+
+</ResourceDictionary>

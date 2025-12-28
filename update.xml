@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <item>
-    <version>1.2.0</version>
-    <url>https://github.com/tylergraydev/tgd-sound-board/releases/download/v1.2.0/TgdSoundboard_Setup_1.2.0.exe</url>
-    <changelog>https://github.com/tylergraydev/tgd-sound-board/releases/tag/v1.2.0</changelog>
+    <version>1.3.0</version>
+    <url>https://github.com/tylergraydev/tgd-sound-board/releases/download/v1.3.0/TgdSoundboard_Setup_1.3.0.exe</url>
+    <changelog>https://github.com/tylergraydev/tgd-sound-board/releases/tag/v1.3.0</changelog>
     <mandatory>false</mandatory>
 </item>

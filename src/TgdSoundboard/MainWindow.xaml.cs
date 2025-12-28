@@ -1,7 +1,9 @@
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using Microsoft.Win32;
 using TgdSoundboard.Models;
+using TgdSoundboard.Services;
 using TgdSoundboard.Views;
 
 namespace TgdSoundboard;
@@ -13,6 +15,37 @@ public partial class MainWindow : Window
         InitializeComponent();
         DataContext = App.MainViewModel;
         StateChanged += MainWindow_StateChanged;
+        Loaded += MainWindow_Loaded;
+    }
+
+    private void MainWindow_Loaded(object sender, RoutedEventArgs e)
+    {
+        // Set theme selector to current theme
+        var currentTheme = ThemeService.CurrentTheme.ToString();
+        foreach (ComboBoxItem item in ThemeSelector.Items)
+        {
+            if (item.Tag?.ToString() == currentTheme)
+            {
+                ThemeSelector.SelectedItem = item;
+                break;
+            }
+        }
+    }
+
+    private async void ThemeSelector_SelectionChanged(object sender, SelectionChangedEventArgs e)
+    {
+        if (ThemeSelector.SelectedItem is ComboBoxItem item && item.Tag is string themeName)
+        {
+            if (Enum.TryParse<AppTheme>(themeName, out var theme))
+            {
+                ThemeService.CurrentTheme = theme;
+
+                // Save theme preference
+                var settings = await App.Database.GetAppSettingsAsync();
+                settings.Theme = themeName;
+                await App.Database.SaveAppSettingsAsync(settings);
+            }
+        }
     }
 
     #region Window Chrome Controls

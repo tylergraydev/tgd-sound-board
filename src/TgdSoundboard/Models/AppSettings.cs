@@ -30,4 +30,7 @@ public partial class AppSettings : ObservableObject
 
     [ObservableProperty]
     private string _clipsDirectory = string.Empty;
+
+    [ObservableProperty]
+    private string _theme = "Neon";
 }

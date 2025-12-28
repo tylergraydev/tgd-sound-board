@@ -1,0 +1,82 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Cyan Theme - Clean dark theme with teal/cyan accents -->
+
+    <!-- Primary Colors -->
+    <Color x:Key="ThemeAccent">#00D9A5</Color>
+    <Color x:Key="ThemeAccentLight">#33E3B8</Color>
+    <Color x:Key="ThemeAccentDark">#00B389</Color>
+    <Color x:Key="ThemeSecondary">#00BCD4</Color>
+
+    <!-- Background Colors -->
+    <Color x:Key="ThemeBgPrimary">#0D0D0D</Color>
+    <Color x:Key="ThemeBgSecondary">#161616</Color>
+    <Color x:Key="ThemeBgTertiary">#1F1F1F</Color>
+    <Color x:Key="ThemeBgCard">#1A1A1A</Color>
+
+    <!-- Text Colors -->
+    <Color x:Key="ThemeTextPrimary">#FFFFFF</Color>
+    <Color x:Key="ThemeTextSecondary">#A0A0A0</Color>
+    <Color x:Key="ThemeTextMuted">#606060</Color>
+
+    <!-- Status Colors -->
+    <Color x:Key="ThemeSuccess">#00D9A5</Color>
+    <Color x:Key="ThemeDanger">#FF5252</Color>
+    <Color x:Key="ThemeWarning">#FFB74D</Color>
+
+    <!-- Playing State -->
+    <Color x:Key="ThemePlaying">#00D9A5</Color>
+    <Color x:Key="ThemePlayingGlow">#00D9A5</Color>
+
+    <!-- Brushes -->
+    <SolidColorBrush x:Key="ThemeAccentBrush" Color="{StaticResource ThemeAccent}"/>
+    <SolidColorBrush x:Key="ThemeAccentLightBrush" Color="{StaticResource ThemeAccentLight}"/>
+    <SolidColorBrush x:Key="ThemeAccentDarkBrush" Color="{StaticResource ThemeAccentDark}"/>
+    <SolidColorBrush x:Key="ThemeSecondaryBrush" Color="{StaticResource ThemeSecondary}"/>
+
+    <SolidColorBrush x:Key="ThemeBgPrimaryBrush" Color="{StaticResource ThemeBgPrimary}"/>
+    <SolidColorBrush x:Key="ThemeBgSecondaryBrush" Color="{StaticResource ThemeBgSecondary}"/>
+    <SolidColorBrush x:Key="ThemeBgTertiaryBrush" Color="{StaticResource ThemeBgTertiary}"/>
+    <SolidColorBrush x:Key="ThemeBgCardBrush" Color="{StaticResource ThemeBgCard}"/>
+
+    <SolidColorBrush x:Key="ThemeTextPrimaryBrush" Color="{StaticResource ThemeTextPrimary}"/>
+    <SolidColorBrush x:Key="ThemeTextSecondaryBrush" Color="{StaticResource ThemeTextSecondary}"/>
+    <SolidColorBrush x:Key="ThemeTextMutedBrush" Color="{StaticResource ThemeTextMuted}"/>
+
+    <SolidColorBrush x:Key="ThemeSuccessBrush" Color="{StaticResource ThemeSuccess}"/>
+    <SolidColorBrush x:Key="ThemeDangerBrush" Color="{StaticResource ThemeDanger}"/>
+    <SolidColorBrush x:Key="ThemeWarningBrush" Color="{StaticResource ThemeWarning}"/>
+
+    <SolidColorBrush x:Key="ThemePlayingBrush" Color="{StaticResource ThemePlaying}"/>
+
+    <!-- Header Gradient - Flat for Cyan theme -->
+    <LinearGradientBrush x:Key="ThemeHeaderGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#161616" Offset="0"/>
+        <GradientStop Color="#161616" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Accent Gradient -->
+    <LinearGradientBrush x:Key="ThemeAccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource ThemeAccent}" Offset="0"/>
+        <GradientStop Color="{StaticResource ThemeSecondary}" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Playing Gradient -->
+    <LinearGradientBrush x:Key="ThemePlayingGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="{StaticResource ThemeAccent}" Offset="0"/>
+        <GradientStop Color="{StaticResource ThemeAccentLight}" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Card Border for selected/playing -->
+    <SolidColorBrush x:Key="ThemeCardBorderBrush" Color="{StaticResource ThemeAccent}"/>
+
+    <!-- UI Element Settings -->
+    <CornerRadius x:Key="ThemeCornerRadius">8</CornerRadius>
+    <CornerRadius x:Key="ThemeCornerRadiusLarge">12</CornerRadius>
+    <Thickness x:Key="ThemeCardBorderThickness">2</Thickness>
+
+    <!-- Glow Effect Opacity (0 = no glow) -->
+    <sys:Double x:Key="ThemeGlowOpacity" xmlns:sys="clr-namespace:System;assembly=mscorlib">0</sys:Double>
+
+</ResourceDictionary>

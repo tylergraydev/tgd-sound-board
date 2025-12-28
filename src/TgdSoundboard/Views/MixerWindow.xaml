@@ -8,8 +8,8 @@
         Title="Audio Mixer"
         Height="600" Width="800"
         WindowStartupLocation="CenterOwner"
-        Background="{StaticResource DarkBgBrush}"
-        TextElement.Foreground="White"
+        Background="{DynamicResource ThemeBgPrimaryBrush}"
+        TextElement.Foreground="{DynamicResource ThemeTextPrimaryBrush}"
         FontFamily="{DynamicResource MaterialDesignFont}">
 
     <Grid>
@@ -20,19 +20,19 @@
         </Grid.RowDefinitions>
 
         <!-- Header -->
-        <Border Grid.Row="0" Background="{StaticResource HeaderGradient}" Padding="24,20">
+        <Border Grid.Row="0" Background="{DynamicResource ThemeHeaderGradient}" Padding="24,20">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="A U D I O   M I X E R" FontSize="20" FontWeight="Bold"/>
-                    <TextBlock Text="Control levels for all audio sources" Opacity="0.7" Margin="0,4,0,0"/>
+                    <TextBlock Text="AUDIO MIXER" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="Control levels for all audio sources" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,4,0,0"/>
                 </StackPanel>
 
                 <!-- Monitor Toggle -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
-                    <Border Background="#40000000" CornerRadius="8" Padding="12,8">
+                    <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Padding="12,8">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="Headphones" VerticalAlignment="Center"
-                                                     Foreground="{StaticResource NeonGreenBrush}" Margin="0,0,8,0"/>
+                                                     Foreground="{DynamicResource ThemeAccentBrush}" Margin="0,0,8,0"/>
                             <TextBlock Text="MONITOR" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,12,0"/>
                             <ToggleButton x:Name="MonitorToggle"
                                           Style="{StaticResource MaterialDesignSwitchToggleButton}"
@@ -53,7 +53,7 @@
                 </ItemsControl.ItemsPanel>
                 <ItemsControl.ItemTemplate>
                     <DataTemplate>
-                        <Border Background="{StaticResource SidebarBgBrush}" CornerRadius="12"
+                        <Border Background="{DynamicResource ThemeBgSecondaryBrush}" CornerRadius="12"
                                 Margin="8" Padding="16" Width="120">
                             <Grid>
                                 <Grid.RowDefinitions>
@@ -66,7 +66,7 @@
 
                                 <!-- Icon -->
                                 <Border Grid.Row="0" Width="48" Height="48" CornerRadius="24"
-                                        Background="{StaticResource NeonPurpleBrush}"
+                                        Background="{DynamicResource ThemeAccentBrush}"
                                         HorizontalAlignment="Center" Margin="0,0,0,12">
                                     <materialDesign:PackIcon Kind="{Binding IconKind}" Width="24" Height="24"
                                                              HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -75,17 +75,13 @@
                                 <!-- Level Meter & Volume Slider -->
                                 <Grid Grid.Row="1" Height="200" Margin="0,8">
                                     <!-- Background track -->
-                                    <Border Background="#20FFFFFF" CornerRadius="4" Width="12" HorizontalAlignment="Center"/>
+                                    <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="4" Width="12" HorizontalAlignment="Center"/>
 
                                     <!-- Level meter (peak) -->
-                                    <Border x:Name="LevelMeter" Background="{StaticResource NeonGreenBrush}"
+                                    <Border x:Name="LevelMeter" Background="{DynamicResource ThemeSuccessBrush}"
                                             CornerRadius="4" Width="12" HorizontalAlignment="Center"
                                             VerticalAlignment="Bottom"
-                                            Height="{Binding PeakLevel, Converter={StaticResource LevelToHeightConverter}}">
-                                        <Border.Effect>
-                                            <DropShadowEffect Color="#00FF87" BlurRadius="10" ShadowDepth="0"/>
-                                        </Border.Effect>
-                                    </Border>
+                                            Height="{Binding PeakLevel, Converter={StaticResource LevelToHeightConverter}}"/>
 
                                     <!-- Volume slider overlay -->
                                     <Slider Orientation="Vertical" Minimum="0" Maximum="1"
@@ -101,7 +97,7 @@
                                            Text="{Binding Volume, StringFormat={}{0:P0}}"
                                            HorizontalAlignment="Center"
                                            FontSize="14" FontWeight="Bold"
-                                           Foreground="{StaticResource NeonBlueBrush}"/>
+                                           Foreground="{DynamicResource ThemeAccentBrush}"/>
 
                                 <!-- Source name -->
                                 <TextBlock Grid.Row="3" Text="{Binding Name}"
@@ -126,7 +122,7 @@
                                                 <Style.Triggers>
                                                     <DataTrigger Binding="{Binding IsMuted}" Value="True">
                                                         <Setter Property="Kind" Value="VolumeOff"/>
-                                                        <Setter Property="Foreground" Value="{StaticResource NeonPinkBrush}"/>
+                                                        <Setter Property="Foreground" Value="{DynamicResource ThemeDangerBrush}"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
                                             </Style>
@@ -141,7 +137,7 @@
         </ScrollViewer>
 
         <!-- Footer with master output -->
-        <Border Grid.Row="2" Background="#10FFFFFF" Padding="24,16">
+        <Border Grid.Row="2" Background="{DynamicResource ThemeBgSecondaryBrush}" Padding="24,16">
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -151,26 +147,22 @@
 
                 <!-- Master label -->
                 <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
-                    <materialDesign:PackIcon Kind="Speaker" Foreground="{StaticResource NeonPurpleBrush}"
+                    <materialDesign:PackIcon Kind="Speaker" Foreground="{DynamicResource ThemeAccentBrush}"
                                              Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <TextBlock Text="MASTER OUTPUT" FontWeight="Bold" VerticalAlignment="Center"/>
                 </StackPanel>
 
                 <!-- Master level meter -->
                 <Grid Grid.Column="1" Margin="24,0">
-                    <Border Background="#20FFFFFF" CornerRadius="4" Height="20"/>
-                    <Border x:Name="MasterLevelBar" Background="{StaticResource NeonGreenBrush}"
-                            CornerRadius="4" Height="20" HorizontalAlignment="Left">
-                        <Border.Effect>
-                            <DropShadowEffect Color="#00FF87" BlurRadius="8" ShadowDepth="0"/>
-                        </Border.Effect>
-                    </Border>
+                    <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="4" Height="20"/>
+                    <Border x:Name="MasterLevelBar" Background="{DynamicResource ThemeSuccessBrush}"
+                            CornerRadius="4" Height="20" HorizontalAlignment="Left"/>
                 </Grid>
 
                 <!-- Level indicator -->
                 <TextBlock Grid.Column="2" x:Name="MasterLevelText" Text="0 dB"
                            FontWeight="Bold" VerticalAlignment="Center"
-                           Foreground="{StaticResource NeonBlueBrush}" Width="60"/>
+                           Foreground="{DynamicResource ThemeAccentBrush}" Width="60"/>
             </Grid>
         </Border>
     </Grid>
