@@ -14,6 +14,18 @@ public partial class MainWindow : Window
         DataContext = App.MainViewModel;
     }
 
+    private void StopAll_Click(object sender, RoutedEventArgs e)
+    {
+        App.MainViewModel.StopAllCommand.Execute(null);
+    }
+
+    private void OpenAppRouting_Click(object sender, RoutedEventArgs e)
+    {
+        var appRoutingWindow = new AppRoutingWindow();
+        appRoutingWindow.Owner = this;
+        appRoutingWindow.ShowDialog();
+    }
+
     private void Window_DragOver(object sender, DragEventArgs e)
     {
         if (e.Data.GetDataPresent(DataFormats.FileDrop))

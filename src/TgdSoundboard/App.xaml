@@ -7,9 +7,43 @@
     <Application.Resources>
         <ResourceDictionary>
             <ResourceDictionary.MergedDictionaries>
-                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="Blue" SecondaryColor="Lime" />
+                <materialDesign:BundledTheme BaseTheme="Dark" PrimaryColor="DeepPurple" SecondaryColor="Lime" />
                 <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign2.Defaults.xaml" />
             </ResourceDictionary.MergedDictionaries>
+
+            <!-- Gamer/Streamer Color Palette -->
+            <Color x:Key="NeonPurple">#9D4EDD</Color>
+            <Color x:Key="NeonPink">#FF006E</Color>
+            <Color x:Key="NeonBlue">#00B4D8</Color>
+            <Color x:Key="NeonGreen">#00FF87</Color>
+            <Color x:Key="DarkBg">#0D0D0D</Color>
+            <Color x:Key="CardBg">#1A1A2E</Color>
+            <Color x:Key="SidebarBg">#16213E</Color>
+
+            <SolidColorBrush x:Key="NeonPurpleBrush" Color="{StaticResource NeonPurple}"/>
+            <SolidColorBrush x:Key="NeonPinkBrush" Color="{StaticResource NeonPink}"/>
+            <SolidColorBrush x:Key="NeonBlueBrush" Color="{StaticResource NeonBlue}"/>
+            <SolidColorBrush x:Key="NeonGreenBrush" Color="{StaticResource NeonGreen}"/>
+            <SolidColorBrush x:Key="DarkBgBrush" Color="{StaticResource DarkBg}"/>
+            <SolidColorBrush x:Key="CardBgBrush" Color="{StaticResource CardBg}"/>
+            <SolidColorBrush x:Key="SidebarBgBrush" Color="{StaticResource SidebarBg}"/>
+
+            <!-- Gradient Brushes -->
+            <LinearGradientBrush x:Key="HeaderGradient" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#667eea" Offset="0"/>
+                <GradientStop Color="#764ba2" Offset="0.5"/>
+                <GradientStop Color="#f953c6" Offset="1"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource NeonPurple}" Offset="0"/>
+                <GradientStop Color="{StaticResource NeonPink}" Offset="1"/>
+            </LinearGradientBrush>
+
+            <LinearGradientBrush x:Key="PlayingGradient" StartPoint="0,0" EndPoint="1,1">
+                <GradientStop Color="{StaticResource NeonGreen}" Offset="0"/>
+                <GradientStop Color="{StaticResource NeonBlue}" Offset="1"/>
+            </LinearGradientBrush>
 
             <converters:EmptyToCollapsedConverter x:Key="EmptyToCollapsed"/>
             <converters:ZeroToVisibleConverter x:Key="ZeroToVisible"/>
