@@ -8,8 +8,7 @@ namespace TgdSoundboard.Services;
 public class UpdateService
 {
     // This URL should point to your update.xml file hosted on GitHub or a web server
-    // For GitHub, you can use: https://raw.githubusercontent.com/YOUR_USERNAME/tgd-sound-board/main/update.xml
-    private const string UpdateUrl = "https://raw.githubusercontent.com/twgicode/tgd-sound-board/main/update.xml";
+    private const string UpdateUrl = "https://raw.githubusercontent.com/tylergraydev/tgd-sound-board/main/update.xml";
 
     public static void Initialize()
     {
