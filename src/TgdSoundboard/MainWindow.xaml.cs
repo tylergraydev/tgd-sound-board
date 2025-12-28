@@ -182,7 +182,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private void ClipCard_Click(object sender, MouseButtonEventArgs e)
+    private async void ClipCard_Click(object sender, MouseButtonEventArgs e)
     {
         // Capture start point for drag detection
         if (sender is FrameworkElement element)
@@ -194,16 +194,10 @@ public partial class MainWindow : Window
         {
             if (e.ClickCount == 2)
             {
-                // Double-click to rename
+                // Double-click to toggle loop
                 e.Handled = true;
-                var dialog = new RenameDialog(clip.Name);
-                dialog.Owner = this;
-
-                if (dialog.ShowDialog() == true)
-                {
-                    clip.Name = dialog.ClipName;
-                    _ = App.Database.UpdateClipAsync(clip);
-                }
+                clip.IsLooping = !clip.IsLooping;
+                await App.Database.UpdateClipAsync(clip);
             }
             else
             {
@@ -623,6 +617,48 @@ public partial class MainWindow : Window
         var dialog = new StreamlabsSettingsDialog();
         dialog.Owner = this;
         dialog.ShowDialog();
+    }
+
+    #endregion
+
+    #region Category Context Menu
+
+    private async void RenameCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is Models.Category category)
+        {
+            var dialog = new RenameDialog(category.Name);
+            dialog.Owner = this;
+
+            if (dialog.ShowDialog() == true)
+            {
+                category.Name = dialog.ClipName;
+                await App.Database.UpdateCategoryAsync(category);
+            }
+        }
+    }
+
+    private async void DeleteCategory_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is Models.Category category)
+        {
+            if (App.MainViewModel.Categories.Count <= 1)
+            {
+                MessageBox.Show("Cannot delete the last category.", "Delete Category", MessageBoxButton.OK, MessageBoxImage.Warning);
+                return;
+            }
+
+            var result = MessageBox.Show(
+                $"Are you sure you want to delete '{category.Name}'?\nThis will also delete all clips in this category.",
+                "Delete Category",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await App.MainViewModel.DeleteCategoryCommand.ExecuteAsync(category);
+            }
+        }
     }
 
     #endregion

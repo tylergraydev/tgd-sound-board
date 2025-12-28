@@ -8,6 +8,12 @@ public partial class AppSettings : ObservableObject
     private string _outputDeviceId = string.Empty;
 
     [ObservableProperty]
+    private string _monitorDeviceId = string.Empty;
+
+    [ObservableProperty]
+    private bool _monitorEnabled;
+
+    [ObservableProperty]
     private float _masterVolume = 1.0f;
 
     [ObservableProperty]

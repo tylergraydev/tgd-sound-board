@@ -14,9 +14,28 @@ public class AudioPlaybackService : IDisposable
     private readonly Queue<SoundClip> _clipQueue = new();
     private readonly object _queueLock = new();
 
+    // Monitor output (local preview)
+    private WasapiOut? _monitorDevice;
+    private MixingSampleProvider? _monitorMixer;
+    private bool _isMonitorEnabled;
+    private string? _monitorDeviceId;
+
+    // App audio routing (capture system audio and mix into output)
+    private WasapiLoopbackCapture? _systemAudioCapture;
+    private BufferedWaveProvider? _systemAudioBuffer;
+    private ISampleProvider? _systemAudioProvider;
+    private bool _isAppRoutingEnabled;
+    private readonly HashSet<int> _routedAppProcessIds = new();
+    private readonly object _routingLock = new();
+
     public event EventHandler<int>? ClipStarted;
     public event EventHandler<int>? ClipStopped;
     public event EventHandler? QueueChanged;
+    public event EventHandler? RoutedAppsChanged;
+
+    public bool IsMonitorEnabled => _isMonitorEnabled;
+    public bool IsAppRoutingEnabled => _isAppRoutingEnabled;
+    public IReadOnlySet<int> RoutedAppProcessIds => _routedAppProcessIds;
 
     public float MasterVolume
     {
@@ -93,8 +112,45 @@ public class AudioPlaybackService : IDisposable
                 _activePlaybacks[clip.Id] = playback;
 
                 _mixer.AddMixerInput(volumeProvider);
-                clip.IsPlaying = true;
-                ClipStarted?.Invoke(this, clip.Id);
+
+                // Also send to monitor if enabled
+                if (_isMonitorEnabled && _monitorMixer != null)
+                {
+                    try
+                    {
+                        var monitorReader = new AudioFileReader(clip.FilePath);
+                        ISampleProvider monitorProvider = monitorReader;
+
+                        if (Math.Abs(clip.PlaybackSpeed - 1.0f) > 0.01f)
+                        {
+                            monitorProvider = new SpeedControlSampleProvider(monitorProvider, clip.PlaybackSpeed);
+                        }
+
+                        if (clip.PitchSemitones != 0)
+                        {
+                            monitorProvider = new PitchShiftSampleProvider(monitorProvider, clip.PitchSemitones);
+                        }
+
+                        if (clip.FadeInSeconds > 0)
+                        {
+                            monitorProvider = new FadeInOutSampleProvider(monitorProvider);
+                            ((FadeInOutSampleProvider)monitorProvider).BeginFadeIn(clip.FadeInSeconds * 1000);
+                        }
+
+                        var monitorVolumeProvider = new VolumeSampleProvider(monitorProvider)
+                        {
+                            Volume = clip.Volume * _masterVolume
+                        };
+
+                        playback.MonitorReader = monitorReader;
+                        playback.MonitorVolumeProvider = monitorVolumeProvider;
+                        _monitorMixer.AddMixerInput(monitorVolumeProvider);
+                    }
+                    catch (Exception ex)
+                    {
+                        System.Diagnostics.Debug.WriteLine($"Error adding to monitor: {ex.Message}");
+                    }
+                }
 
                 // Monitor for completion
                 _ = MonitorPlaybackAsync(clip);
@@ -102,8 +158,13 @@ public class AudioPlaybackService : IDisposable
             catch (Exception ex)
             {
                 System.Diagnostics.Debug.WriteLine($"Error playing clip: {ex.Message}");
+                return;
             }
         }
+
+        // Fire event and set state outside lock to avoid deadlock
+        clip.IsPlaying = true;
+        ClipStarted?.Invoke(this, clip.Id);
     }
 
     #region Queue Management
@@ -242,27 +303,54 @@ public class AudioPlaybackService : IDisposable
 
     public void StopClip(int clipId)
     {
+        bool wasStopped = false;
         lock (_lock)
         {
             if (_activePlaybacks.TryGetValue(clipId, out var playback))
             {
                 _mixer.RemoveMixerInput(playback.VolumeProvider);
+
+                // Also remove from monitor if applicable
+                if (playback.MonitorVolumeProvider != null && _monitorMixer != null)
+                {
+                    _monitorMixer.RemoveMixerInput(playback.MonitorVolumeProvider);
+                }
+
                 playback.Dispose();
                 _activePlaybacks.Remove(clipId);
-                ClipStopped?.Invoke(this, clipId);
+                wasStopped = true;
             }
+        }
+
+        // Fire event outside lock to avoid deadlock with Dispatcher.Invoke
+        if (wasStopped)
+        {
+            ClipStopped?.Invoke(this, clipId);
         }
     }
 
     public void StopAll()
     {
+        List<int> stoppedClipIds;
         lock (_lock)
         {
-            var clipIds = _activePlaybacks.Keys.ToList();
-            foreach (var clipId in clipIds)
+            stoppedClipIds = _activePlaybacks.Keys.ToList();
+            foreach (var playback in _activePlaybacks.Values)
             {
-                StopClip(clipId);
+                _mixer.RemoveMixerInput(playback.VolumeProvider);
+                if (playback.MonitorVolumeProvider != null && _monitorMixer != null)
+                {
+                    _monitorMixer.RemoveMixerInput(playback.MonitorVolumeProvider);
+                }
+                playback.Dispose();
             }
+            _activePlaybacks.Clear();
+        }
+
+        // Fire events outside lock
+        foreach (var clipId in stoppedClipIds)
+        {
+            ClipStopped?.Invoke(this, clipId);
         }
     }
 
@@ -360,9 +448,171 @@ public class AudioPlaybackService : IDisposable
         }
     }
 
+    #region Monitor (Local Preview)
+
+    public void EnableMonitor(string? deviceId = null)
+    {
+        if (_isMonitorEnabled) return;
+
+        try
+        {
+            _monitorDeviceId = deviceId;
+            var device = GetOutputDevice(deviceId);
+
+            _monitorDevice = device != null
+                ? new WasapiOut(device, NAudio.CoreAudioApi.AudioClientShareMode.Shared, true, 100)
+                : new WasapiOut(NAudio.CoreAudioApi.AudioClientShareMode.Shared, 100);
+
+            _monitorMixer = new MixingSampleProvider(WaveFormat.CreateIeeeFloatWaveFormat(44100, 2))
+            {
+                ReadFully = true
+            };
+
+            _monitorDevice.Init(_monitorMixer);
+            _monitorDevice.Play();
+            _isMonitorEnabled = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error enabling monitor: {ex.Message}");
+            DisableMonitor();
+            throw;
+        }
+    }
+
+    public void DisableMonitor()
+    {
+        _isMonitorEnabled = false;
+
+        _monitorDevice?.Stop();
+        _monitorDevice?.Dispose();
+        _monitorDevice = null;
+        _monitorMixer = null;
+        _monitorDeviceId = null;
+    }
+
+    #endregion
+
+    #region App Audio Routing
+
+    public void EnableAppRouting()
+    {
+        if (_isAppRoutingEnabled) return;
+
+        try
+        {
+            var enumerator = new NAudio.CoreAudioApi.MMDeviceEnumerator();
+            var defaultDevice = enumerator.GetDefaultAudioEndpoint(
+                NAudio.CoreAudioApi.DataFlow.Render,
+                NAudio.CoreAudioApi.Role.Multimedia);
+
+            _systemAudioCapture = new WasapiLoopbackCapture(defaultDevice);
+
+            _systemAudioBuffer = new BufferedWaveProvider(_systemAudioCapture.WaveFormat)
+            {
+                BufferLength = _systemAudioCapture.WaveFormat.AverageBytesPerSecond * 2,
+                DiscardOnBufferOverflow = true
+            };
+
+            _systemAudioCapture.DataAvailable += (s, e) =>
+            {
+                _systemAudioBuffer?.AddSamples(e.Buffer, 0, e.BytesRecorded);
+            };
+
+            // Convert to mixer format (44100 Hz stereo)
+            _systemAudioProvider = ConvertToMixerFormat(
+                _systemAudioBuffer.ToSampleProvider(),
+                _systemAudioCapture.WaveFormat);
+
+            _mixer.AddMixerInput(_systemAudioProvider);
+            _systemAudioCapture.StartRecording();
+            _isAppRoutingEnabled = true;
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error enabling app routing: {ex.Message}");
+            DisableAppRouting();
+            throw;
+        }
+    }
+
+    public void DisableAppRouting()
+    {
+        if (_systemAudioProvider != null)
+        {
+            _mixer.RemoveMixerInput(_systemAudioProvider);
+        }
+
+        _systemAudioCapture?.StopRecording();
+        _systemAudioCapture?.Dispose();
+        _systemAudioCapture = null;
+        _systemAudioBuffer = null;
+        _systemAudioProvider = null;
+        _isAppRoutingEnabled = false;
+
+        lock (_routingLock)
+        {
+            _routedAppProcessIds.Clear();
+        }
+        RoutedAppsChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void AddRoutedApp(int processId)
+    {
+        lock (_routingLock)
+        {
+            if (_routedAppProcessIds.Add(processId))
+            {
+                RoutedAppsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    public void RemoveRoutedApp(int processId)
+    {
+        lock (_routingLock)
+        {
+            if (_routedAppProcessIds.Remove(processId))
+            {
+                RoutedAppsChanged?.Invoke(this, EventArgs.Empty);
+            }
+        }
+    }
+
+    public bool IsAppRouted(int processId)
+    {
+        lock (_routingLock)
+        {
+            return _routedAppProcessIds.Contains(processId);
+        }
+    }
+
+    private ISampleProvider ConvertToMixerFormat(ISampleProvider source, WaveFormat originalFormat)
+    {
+        ISampleProvider result = source;
+
+        // Convert to stereo if mono
+        if (originalFormat.Channels == 1)
+        {
+            result = new MonoToStereoSampleProvider(result);
+        }
+
+        // Resample if needed
+        if (originalFormat.SampleRate != 44100)
+        {
+            result = new WdlResamplingSampleProvider(result, 44100);
+        }
+
+        return result;
+    }
+
+    #endregion
+
     public void Dispose()
     {
         StopAll();
+        DisableAppRouting();
+        DisableMonitor();
         _outputDevice.Stop();
         _outputDevice.Dispose();
     }
@@ -377,6 +627,10 @@ public class AudioPlaybackService : IDisposable
         public float FadeOutSeconds { get; }
         public bool FadeOutStarted { get; set; }
 
+        // Monitor output
+        public AudioFileReader? MonitorReader { get; set; }
+        public VolumeSampleProvider? MonitorVolumeProvider { get; set; }
+
         public PlaybackInstance(int clipId, AudioFileReader reader, VolumeSampleProvider volumeProvider, float clipVolume, bool isLooping = false, float fadeOutSeconds = 0)
         {
             ClipId = clipId;
@@ -390,11 +644,16 @@ public class AudioPlaybackService : IDisposable
         public void UpdateVolume(float masterVolume)
         {
             VolumeProvider.Volume = ClipVolume * masterVolume;
+            if (MonitorVolumeProvider != null)
+            {
+                MonitorVolumeProvider.Volume = ClipVolume * masterVolume;
+            }
         }
 
         public void Dispose()
         {
             Reader.Dispose();
+            MonitorReader?.Dispose();
         }
     }
 }

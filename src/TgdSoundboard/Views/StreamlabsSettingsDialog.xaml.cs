@@ -27,6 +27,18 @@ public partial class StreamlabsSettingsDialog : Window
         App.Streamlabs.ConnectionChanged += OnConnectionChanged;
     }
 
+    protected override async void OnClosing(System.ComponentModel.CancelEventArgs e)
+    {
+        // Auto-save settings when dialog is closing (unless already saved via Save button)
+        if (!WasSaved)
+        {
+            var token = TokenTextBox.Text.Trim();
+            var autoConnect = AutoConnectCheckBox.IsChecked ?? false;
+            await App.MainViewModel.SaveStreamlabsSettingsAsync(token, autoConnect, string.Empty);
+        }
+        base.OnClosing(e);
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         App.Streamlabs.ConnectionChanged -= OnConnectionChanged;

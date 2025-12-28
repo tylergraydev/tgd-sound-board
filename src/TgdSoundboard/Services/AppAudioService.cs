@@ -130,13 +130,32 @@ public class AppAudioService
     }
 }
 
-public class AudioApp
+public class AudioApp : CommunityToolkit.Mvvm.ComponentModel.ObservableObject
 {
     public int ProcessId { get; set; }
     public string ProcessName { get; set; } = string.Empty;
     public string DisplayName { get; set; } = string.Empty;
-    public float Volume { get; set; } = 1.0f;
-    public bool IsMuted { get; set; }
+
+    private float _volume = 1.0f;
+    public float Volume
+    {
+        get => _volume;
+        set => SetProperty(ref _volume, value);
+    }
+
+    private bool _isMuted;
+    public bool IsMuted
+    {
+        get => _isMuted;
+        set => SetProperty(ref _isMuted, value);
+    }
+
     public string IconPath { get; set; } = string.Empty;
-    public bool RouteToVirtualCable { get; set; }
+
+    private bool _isRouted;
+    public bool IsRouted
+    {
+        get => _isRouted;
+        set => SetProperty(ref _isRouted, value);
+    }
 }

@@ -7,33 +7,72 @@ namespace TgdSoundboard.Views;
 
 public partial class AppRoutingWindow : Window
 {
-    private readonly Dictionary<int, bool> _capturedApps = new();
+    private List<AudioApp>? _apps;
 
     public AppRoutingWindow()
     {
         InitializeComponent();
+        Loaded += OnLoaded;
+        Closed += OnClosed;
+    }
+
+    private void OnLoaded(object sender, RoutedEventArgs e)
+    {
+        // Set initial state of master toggle
+        MasterRoutingToggle.IsChecked = App.AudioPlayback.IsAppRoutingEnabled;
         LoadApps();
+    }
+
+    private void OnClosed(object? sender, EventArgs e)
+    {
+        // Keep routing active even when window closes
     }
 
     private void LoadApps()
     {
-        var apps = AppAudioService.GetRunningAudioApps();
+        _apps = AppAudioService.GetRunningAudioApps();
 
-        // Restore capture state
-        foreach (var app in apps)
+        // Filter out the soundboard itself
+        var currentProcessId = Environment.ProcessId;
+        _apps = _apps.Where(a => a.ProcessId != currentProcessId).ToList();
+
+        // Mark apps as routed based on current routing state
+        foreach (var app in _apps)
         {
-            if (_capturedApps.TryGetValue(app.ProcessId, out var captured))
-            {
-                app.RouteToVirtualCable = captured;
-            }
+            app.IsRouted = App.AudioPlayback.IsAppRouted(app.ProcessId);
         }
 
-        AppList.ItemsSource = apps;
+        AppList.ItemsSource = _apps;
+        EmptyState.Visibility = _apps.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
 
     private void Refresh_Click(object sender, RoutedEventArgs e)
     {
         LoadApps();
+    }
+
+    private void MasterRoutingToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (MasterRoutingToggle.IsChecked == true)
+        {
+            try
+            {
+                App.AudioPlayback.EnableAppRouting();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    $"Could not enable audio routing: {ex.Message}",
+                    "Routing Error",
+                    MessageBoxButton.OK,
+                    MessageBoxImage.Warning);
+                MasterRoutingToggle.IsChecked = false;
+            }
+        }
+        else
+        {
+            App.AudioPlayback.DisableAppRouting();
+        }
     }
 
     private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -44,65 +83,12 @@ public partial class AppRoutingWindow : Window
         }
     }
 
-    private void CaptureToggle_Click(object sender, RoutedEventArgs e)
+    private void MuteToggle_Click(object sender, RoutedEventArgs e)
     {
         if (sender is ToggleButton toggle && toggle.Tag is int processId)
         {
-            var capture = toggle.IsChecked ?? false;
-            _capturedApps[processId] = capture;
-
-            if (capture)
-            {
-                // Start capturing this app's audio
-                StartAppCapture(processId);
-            }
-            else
-            {
-                // Stop capturing
-                StopAppCapture(processId);
-            }
+            var muted = toggle.IsChecked ?? false;
+            AppAudioService.SetAppMute(processId, muted);
         }
-    }
-
-    private void StartAppCapture(int processId)
-    {
-        // Note: True per-app audio capture requires either:
-        // 1. Windows 10 2004+ AudioGraph API with AppCapture
-        // 2. WASAPI process loopback (Windows 10 2004+)
-        // 3. Third-party audio driver/hook
-        //
-        // For now, we'll use the Windows Sound Settings approach
-        // which opens the Windows sound mixer for manual routing
-
-        try
-        {
-            // Open Windows sound settings for manual per-app routing
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-            {
-                FileName = "ms-settings:apps-volume",
-                UseShellExecute = true
-            });
-
-            MessageBox.Show(
-                $"Windows Sound Settings opened.\n\n" +
-                $"To route this app to the virtual cable:\n" +
-                $"1. Find the app in the list\n" +
-                $"2. Change its 'Output' to 'CABLE Input'\n\n" +
-                $"This allows the app's audio to be captured by the soundboard.",
-                "App Routing",
-                MessageBoxButton.OK,
-                MessageBoxImage.Information);
-        }
-        catch
-        {
-            // Fallback for older Windows
-            System.Diagnostics.Process.Start("sndvol.exe");
-        }
-    }
-
-    private void StopAppCapture(int processId)
-    {
-        // Reset would require setting back to default device
-        // For now just update the UI state
     }
 }

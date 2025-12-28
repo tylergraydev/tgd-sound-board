@@ -119,6 +119,28 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <!-- Stream Output Device -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,12,0" ToolTip="Stream Output: Where Streamlabs captures from">
+                            <materialDesign:PackIcon Kind="Broadcast" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,6,0"/>
+                            <ComboBox Width="140"
+                                      VerticalAlignment="Center"
+                                      Style="{StaticResource MaterialDesignComboBox}"
+                                      ItemsSource="{Binding OutputDevices}"
+                                      SelectedItem="{Binding SelectedOutputDevice}"
+                                      DisplayMemberPath="Name"/>
+                        </StackPanel>
+
+                        <!-- Monitor Device -->
+                        <StackPanel Orientation="Horizontal" Margin="0,0,12,0" ToolTip="Monitor: Your headphones (hear clips here)">
+                            <materialDesign:PackIcon Kind="Headphones" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,6,0"/>
+                            <ComboBox Width="140"
+                                      VerticalAlignment="Center"
+                                      Style="{StaticResource MaterialDesignComboBox}"
+                                      ItemsSource="{Binding OutputDevices}"
+                                      SelectedItem="{Binding SelectedMonitorDevice}"
+                                      DisplayMemberPath="Name"/>
+                        </StackPanel>
+
                         <!-- Theme Selector -->
                         <ComboBox x:Name="ThemeSelector"
                                   Width="100"
@@ -130,6 +152,21 @@
                             <ComboBoxItem Content="Cyan" Tag="Cyan"/>
                             <ComboBoxItem Content="Neon" Tag="Neon" IsSelected="True"/>
                         </ComboBox>
+
+                        <!-- App Routing Button -->
+                        <Button Click="OpenAppRouting_Click"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Background="{DynamicResource ThemeBgTertiaryBrush}"
+                                Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                                Padding="12,6"
+                                Margin="0,0,12,0"
+                                ToolTip="Route app audio through soundboard"
+                                materialDesign:ButtonAssist.CornerRadius="8">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="VolumeSource" VerticalAlignment="Center"/>
+                                <TextBlock Text="Route Apps" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            </StackPanel>
+                        </Button>
 
                         <!-- Mixer Button -->
                         <Button Click="OpenMixer_Click"
@@ -144,6 +181,30 @@
                                 <TextBlock Text="Mixer" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
+
+                        <!-- Monitor Toggle -->
+                        <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Padding="8,6" Margin="0,0,12,0">
+                            <ToggleButton x:Name="MonitorToggle"
+                                          Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
+                                          IsChecked="{Binding IsMonitorEnabled}"
+                                          Command="{Binding ToggleMonitorCommand}"
+                                          ToolTip="Monitor: Hear soundboard in your headphones"
+                                          Width="36" Height="28"
+                                          Padding="0">
+                                <materialDesign:PackIcon Kind="Headphones" Width="18" Height="18">
+                                    <materialDesign:PackIcon.Style>
+                                        <Style TargetType="materialDesign:PackIcon">
+                                            <Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondaryBrush}"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding IsMonitorEnabled}" Value="True">
+                                                    <Setter Property="Foreground" Value="{DynamicResource ThemeAccentBrush}"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </materialDesign:PackIcon.Style>
+                                </materialDesign:PackIcon>
+                            </ToggleButton>
+                        </Border>
 
                         <!-- Master Volume -->
                         <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Padding="12,6" Margin="0,0,12,0">
@@ -234,6 +295,21 @@
                         <ListBox.ItemTemplate>
                             <DataTemplate>
                                 <Border Padding="12,10" Margin="6,2" CornerRadius="{DynamicResource ThemeCornerRadius}" x:Name="ItemBorder">
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename" Click="RenameCategory_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Pencil"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="Delete" Click="DeleteCategory_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Delete"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <DockPanel>
                                         <Border Width="3" CornerRadius="2" Margin="0,0,12,0" DockPanel.Dock="Left"
                                                 Background="{DynamicResource ThemeAccentBrush}"/>

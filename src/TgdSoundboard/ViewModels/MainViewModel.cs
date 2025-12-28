@@ -25,6 +25,9 @@ public partial class MainViewModel : ObservableObject
     private AudioDevice? _selectedOutputDevice;
 
     [ObservableProperty]
+    private AudioDevice? _selectedMonitorDevice;
+
+    [ObservableProperty]
     private float _masterVolume = 1.0f;
 
     [ObservableProperty]
@@ -53,6 +56,9 @@ public partial class MainViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _hasQueuedClips;
+
+    [ObservableProperty]
+    private bool _isMonitorEnabled;
 
     // Streamlabs properties
     [ObservableProperty]
@@ -135,9 +141,24 @@ public partial class MainViewModel : ObservableObject
         var inputs = AudioPlaybackService.GetInputDevices();
         InputDevices = new ObservableCollection<AudioDevice>(inputs);
 
-        // Select saved output device
+        // Select saved output device (stream output)
         SelectedOutputDevice = OutputDevices.FirstOrDefault(d => d.Id == Settings.OutputDeviceId)
             ?? OutputDevices.FirstOrDefault(d => d.IsDefault);
+
+        // Select saved monitor device (user's headphones)
+        SelectedMonitorDevice = OutputDevices.FirstOrDefault(d => d.Id == Settings.MonitorDeviceId)
+            ?? OutputDevices.FirstOrDefault(d => d.IsDefault);
+
+        // Restore monitor state
+        if (Settings.MonitorEnabled && SelectedMonitorDevice != null)
+        {
+            try
+            {
+                App.AudioPlayback.EnableMonitor(SelectedMonitorDevice.Id);
+                IsMonitorEnabled = true;
+            }
+            catch { }
+        }
     }
 
     partial void OnMasterVolumeChanged(float value)
@@ -172,6 +193,68 @@ public partial class MainViewModel : ObservableObject
     private void StopAll()
     {
         App.AudioPlayback.StopAll();
+    }
+
+    [RelayCommand]
+    private async Task ToggleMonitorAsync()
+    {
+        if (IsMonitorEnabled)
+        {
+            App.AudioPlayback.DisableMonitor();
+            IsMonitorEnabled = false;
+            Settings.MonitorEnabled = false;
+        }
+        else
+        {
+            try
+            {
+                // Enable monitor on selected monitor device (user's headphones)
+                App.AudioPlayback.EnableMonitor(SelectedMonitorDevice?.Id);
+                IsMonitorEnabled = true;
+                Settings.MonitorEnabled = true;
+            }
+            catch (Exception ex)
+            {
+                System.Diagnostics.Debug.WriteLine($"Failed to enable monitor: {ex.Message}");
+                IsMonitorEnabled = false;
+                Settings.MonitorEnabled = false;
+            }
+        }
+        await App.Database.SaveAppSettingsAsync(Settings);
+    }
+
+    partial void OnSelectedOutputDeviceChanged(AudioDevice? value)
+    {
+        if (value != null)
+        {
+            Settings.OutputDeviceId = value.Id;
+            _ = App.Database.SaveAppSettingsAsync(Settings);
+            // Note: Changing output device requires app restart to take effect
+        }
+    }
+
+    partial void OnSelectedMonitorDeviceChanged(AudioDevice? value)
+    {
+        if (value != null)
+        {
+            Settings.MonitorDeviceId = value.Id;
+            _ = App.Database.SaveAppSettingsAsync(Settings);
+
+            // If monitor is enabled, restart it on the new device
+            if (IsMonitorEnabled)
+            {
+                App.AudioPlayback.DisableMonitor();
+                try
+                {
+                    App.AudioPlayback.EnableMonitor(value.Id);
+                }
+                catch
+                {
+                    IsMonitorEnabled = false;
+                    Settings.MonitorEnabled = false;
+                }
+            }
+        }
     }
 
     [RelayCommand]
@@ -265,20 +348,26 @@ public partial class MainViewModel : ObservableObject
 
     private void OnClipStarted(object? sender, int clipId)
     {
-        var clip = FindClipById(clipId);
-        if (clip != null)
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
-            clip.IsPlaying = true;
-        }
+            var clip = FindClipById(clipId);
+            if (clip != null)
+            {
+                clip.IsPlaying = true;
+            }
+        });
     }
 
     private void OnClipStopped(object? sender, int clipId)
     {
-        var clip = FindClipById(clipId);
-        if (clip != null)
+        System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
-            clip.IsPlaying = false;
-        }
+            var clip = FindClipById(clipId);
+            if (clip != null)
+            {
+                clip.IsPlaying = false;
+            }
+        });
     }
 
     private SoundClip? FindClipById(int clipId)

@@ -247,6 +247,8 @@ public class DatabaseService
         var settings = new AppSettings();
 
         settings.OutputDeviceId = await GetSettingAsync("OutputDeviceId") ?? string.Empty;
+        settings.MonitorDeviceId = await GetSettingAsync("MonitorDeviceId") ?? string.Empty;
+        settings.MonitorEnabled = bool.TryParse(await GetSettingAsync("MonitorEnabled"), out var monEnabled) && monEnabled;
         settings.MasterVolume = float.TryParse(await GetSettingAsync("MasterVolume"), out var vol) ? vol : 1.0f;
         settings.GridColumns = int.TryParse(await GetSettingAsync("GridColumns"), out var cols) ? cols : 6;
         settings.ClipsDirectory = await GetSettingAsync("ClipsDirectory") ??
@@ -266,6 +268,8 @@ public class DatabaseService
     public async Task SaveAppSettingsAsync(AppSettings settings)
     {
         await SetSettingAsync("OutputDeviceId", settings.OutputDeviceId);
+        await SetSettingAsync("MonitorDeviceId", settings.MonitorDeviceId);
+        await SetSettingAsync("MonitorEnabled", settings.MonitorEnabled.ToString());
         await SetSettingAsync("MasterVolume", settings.MasterVolume.ToString());
         await SetSettingAsync("GridColumns", settings.GridColumns.ToString());
         await SetSettingAsync("ClipsDirectory", settings.ClipsDirectory);
