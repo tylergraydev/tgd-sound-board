@@ -259,6 +259,8 @@ public class DatabaseService
         settings.StreamlabsToken = await GetSettingAsync("StreamlabsToken") ?? string.Empty;
         settings.StreamlabsAutoConnect = bool.TryParse(await GetSettingAsync("StreamlabsAutoConnect"), out var autoConnect) && autoConnect;
         settings.StreamlabsReplayScene = await GetSettingAsync("StreamlabsReplayScene") ?? string.Empty;
+        settings.StreamlabsReplayFolder = await GetSettingAsync("StreamlabsReplayFolder") ??
+            Environment.GetFolderPath(Environment.SpecialFolder.MyVideos);
 
         Directory.CreateDirectory(settings.ClipsDirectory);
 
@@ -279,6 +281,7 @@ public class DatabaseService
         await SetSettingAsync("StreamlabsToken", settings.StreamlabsToken);
         await SetSettingAsync("StreamlabsAutoConnect", settings.StreamlabsAutoConnect.ToString());
         await SetSettingAsync("StreamlabsReplayScene", settings.StreamlabsReplayScene);
+        await SetSettingAsync("StreamlabsReplayFolder", settings.StreamlabsReplayFolder);
     }
 
     public async Task ExportConfigAsync(string filePath)

@@ -512,11 +512,12 @@ public partial class MainViewModel : ObservableObject
         }
     }
 
-    public async Task SaveStreamlabsSettingsAsync(string token, bool autoConnect, string replayScene)
+    public async Task SaveStreamlabsSettingsAsync(string token, bool autoConnect, string replayScene, string replayFolder)
     {
         Settings.StreamlabsToken = token;
         Settings.StreamlabsAutoConnect = autoConnect;
         Settings.StreamlabsReplayScene = replayScene;
+        Settings.StreamlabsReplayFolder = replayFolder;
         await App.Database.SaveAppSettingsAsync(Settings);
 
         // Update the service token

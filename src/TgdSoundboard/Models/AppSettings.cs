@@ -49,4 +49,7 @@ public partial class AppSettings : ObservableObject
 
     [ObservableProperty]
     private string _streamlabsReplayScene = string.Empty;
+
+    [ObservableProperty]
+    private string _streamlabsReplayFolder = string.Empty;
 }

@@ -317,6 +317,206 @@ public class StreamlabsService : IDisposable
 
     #endregion
 
+    #region Replay Playback
+
+    private const string ReplaySceneName = "TGD Replay";
+    private const string ReplaySourceName = "Replay Video";
+
+    public async Task<bool> PlayReplayAsync(string videoPath, CancellationToken ct = default)
+    {
+        if (!_isConnected)
+        {
+            LastError = "Not connected to Streamlabs";
+            return false;
+        }
+
+        try
+        {
+            Console.WriteLine($"[Streamlabs] Playing replay: {videoPath}");
+
+            // Step 0: Save the current scene to return to later
+            var previousSceneId = await GetActiveSceneIdAsync(ct);
+            Console.WriteLine($"[Streamlabs] Previous scene: {previousSceneId}");
+
+            // Step 1: Create or get the replay scene
+            var replaySceneId = await GetOrCreateReplaySceneAsync(ct);
+            if (replaySceneId == null)
+            {
+                LastError = "Could not create replay scene";
+                return false;
+            }
+
+            // Step 2: Create or update the media source in the scene
+            var success = await SetupReplaySourceAsync(replaySceneId, videoPath, ct);
+            if (!success)
+            {
+                return false;
+            }
+
+            // Step 3: Get video duration
+            var duration = GetVideoDuration(videoPath);
+            Console.WriteLine($"[Streamlabs] Video duration: {duration.TotalSeconds:F1}s");
+
+            // Step 4: Switch to the replay scene
+            var switchResult = await SendRequestAsync("makeSceneActive", "ScenesService", [replaySceneId], ct);
+            if (!switchResult.Success)
+            {
+                LastError = $"Could not switch to replay scene: {switchResult.ErrorMessage}";
+                return false;
+            }
+
+            Console.WriteLine($"[Streamlabs] Switched to replay scene, playing video");
+
+            // Step 5: Schedule return to previous scene after video ends
+            if (previousSceneId != null && previousSceneId != replaySceneId && duration > TimeSpan.Zero)
+            {
+                _ = ReturnToPreviousSceneAsync(previousSceneId, duration);
+            }
+
+            return true;
+        }
+        catch (Exception ex)
+        {
+            LastError = $"Failed to play replay: {ex.Message}";
+            ErrorOccurred?.Invoke(this, LastError);
+            return false;
+        }
+    }
+
+    private static TimeSpan GetVideoDuration(string videoPath)
+    {
+        try
+        {
+            // Try to get duration from file metadata using Shell32
+            var file = TagLib.File.Create(videoPath);
+            return file.Properties.Duration;
+        }
+        catch
+        {
+            // Default to 30 seconds if we can't read the duration
+            return TimeSpan.FromSeconds(30);
+        }
+    }
+
+    private async Task ReturnToPreviousSceneAsync(string sceneId, TimeSpan delay)
+    {
+        try
+        {
+            // Wait for video to finish (add 1 second buffer)
+            await Task.Delay(delay + TimeSpan.FromSeconds(1));
+
+            // Check if we're still connected
+            if (!_isConnected) return;
+
+            // Switch back to previous scene
+            Console.WriteLine($"[Streamlabs] Returning to previous scene: {sceneId}");
+            var result = await SendRequestAsync("makeSceneActive", "ScenesService", [sceneId], CancellationToken.None);
+            if (result.Success)
+            {
+                Console.WriteLine($"[Streamlabs] Returned to previous scene");
+            }
+            else
+            {
+                Console.WriteLine($"[Streamlabs] Failed to return to previous scene: {result.ErrorMessage}");
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"[Streamlabs] Error returning to previous scene: {ex.Message}");
+        }
+    }
+
+    private async Task<string?> GetOrCreateReplaySceneAsync(CancellationToken ct)
+    {
+        // Check if replay scene already exists
+        var scenesResult = await SendRequestAsync("getScenes", "ScenesService", null, ct);
+        if (scenesResult.Success && scenesResult.Data != null)
+        {
+            var scenes = JsonSerializer.Deserialize<List<SceneInfo>>(scenesResult.Data.Value.GetRawText(), JsonOptions);
+            var existingScene = scenes?.FirstOrDefault(s => s.Name == ReplaySceneName);
+            if (existingScene != null)
+            {
+                Console.WriteLine($"[Streamlabs] Found existing replay scene: {existingScene.Id}");
+                return existingScene.Id;
+            }
+        }
+
+        // Create new replay scene
+        Console.WriteLine($"[Streamlabs] Creating new replay scene: {ReplaySceneName}");
+        var createResult = await SendRequestAsync("createScene", "ScenesService", [ReplaySceneName], ct);
+        if (createResult.Success && createResult.Data != null)
+        {
+            try
+            {
+                var sceneId = createResult.Data.Value.GetProperty("id").GetString();
+                Console.WriteLine($"[Streamlabs] Created replay scene: {sceneId}");
+                return sceneId;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Streamlabs] Error parsing scene result: {ex.Message}");
+            }
+        }
+
+        LastError = createResult.ErrorMessage ?? "Could not create replay scene";
+        return null;
+    }
+
+    private async Task<bool> SetupReplaySourceAsync(string sceneId, string videoPath, CancellationToken ct)
+    {
+        // Create media source settings
+        var settings = new Dictionary<string, object>
+        {
+            ["local_file"] = videoPath,
+            ["is_local_file"] = true,
+            ["looping"] = false,
+            ["restart_on_activate"] = true
+        };
+
+        Console.WriteLine($"[Streamlabs] Creating media source for: {videoPath}");
+
+        // Try to create the source
+        var createResult = await SendRequestAsync("createSource", "SourcesService",
+            [ReplaySourceName, "ffmpeg_source", settings], ct);
+
+        if (!createResult.Success)
+        {
+            // Source might already exist, try to update it
+            Console.WriteLine($"[Streamlabs] Source creation failed, trying to update existing source");
+            // For now, just report the error
+            LastError = createResult.ErrorMessage ?? "Could not create media source";
+            return false;
+        }
+
+        // Add source to scene
+        if (createResult.Data != null)
+        {
+            try
+            {
+                var sourceId = createResult.Data.Value.GetProperty("id").GetString();
+                if (!string.IsNullOrEmpty(sourceId))
+                {
+                    var sceneResource = $"Scene[\"{sceneId}\"]";
+                    Console.WriteLine($"[Streamlabs] Adding source {sourceId} to scene {sceneId}");
+                    var addResult = await SendRequestAsync("addSource", sceneResource, [sourceId], ct);
+                    if (!addResult.Success)
+                    {
+                        Console.WriteLine($"[Streamlabs] Failed to add source to scene: {addResult.ErrorMessage}");
+                    }
+                    return true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[Streamlabs] Error setting up source: {ex.Message}");
+            }
+        }
+
+        return true;
+    }
+
+    #endregion
+
     private async Task<RpcResult> SendRequestAsync(string method, string resource, object[]? args, CancellationToken ct)
     {
         if (_webSocket?.State != WebSocketState.Open)

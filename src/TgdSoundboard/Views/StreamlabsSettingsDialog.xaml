@@ -3,7 +3,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         Title="Streamlabs Settings"
-        Height="350" Width="450"
+        Height="450" Width="450"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource ThemeBgPrimaryBrush}"
         TextElement.Foreground="{DynamicResource ThemeTextPrimaryBrush}"
@@ -13,6 +13,7 @@
 
     <Grid Margin="24">
         <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
             <RowDefinition Height="Auto"/>
@@ -50,8 +51,31 @@
                   Margin="0,0,0,16"
                   Foreground="{DynamicResource ThemeTextPrimaryBrush}"/>
 
+        <!-- Replay Folder -->
+        <StackPanel Grid.Row="3" Margin="0,0,0,16">
+            <TextBlock Text="Replay Folder" FontWeight="Medium" Margin="0,0,0,8"/>
+            <DockPanel>
+                <Button DockPanel.Dock="Right"
+                        Click="BrowseReplayFolder_Click"
+                        Style="{StaticResource MaterialDesignOutlinedButton}"
+                        Padding="12,6"
+                        Margin="8,0,0,0"
+                        Content="Browse"/>
+                <TextBox x:Name="ReplayFolderTextBox"
+                         Style="{StaticResource MaterialDesignOutlinedTextBox}"
+                         materialDesign:HintAssist.Hint="Path to replay folder"
+                         Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                         CaretBrush="{DynamicResource ThemeTextPrimaryBrush}"
+                         Background="{DynamicResource ThemeBgSecondaryBrush}"/>
+            </DockPanel>
+            <TextBlock Text="Folder where Streamlabs saves replay buffer files"
+                       FontSize="11"
+                       Foreground="{DynamicResource ThemeTextMutedBrush}"
+                       Margin="0,4,0,0"/>
+        </StackPanel>
+
         <!-- Status -->
-        <Border Grid.Row="3"
+        <Border Grid.Row="4"
                 Background="{DynamicResource ThemeBgSecondaryBrush}"
                 CornerRadius="8"
                 Padding="12"
@@ -66,7 +90,7 @@
         </Border>
 
         <!-- Buttons -->
-        <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+        <StackPanel Grid.Row="6" Orientation="Horizontal" HorizontalAlignment="Right">
             <Button x:Name="TestButton"
                     Content="Test Connection"
                     Click="TestConnection_Click"

@@ -601,6 +601,13 @@ public partial class MainWindow : Window
         dialog.ShowDialog();
     }
 
+    private void ViewReplays_Click(object sender, RoutedEventArgs e)
+    {
+        var window = new ReplaysWindow();
+        window.Owner = this;
+        window.ShowDialog();
+    }
+
     private async void StreamlabsStatus_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         // If already connected, don't do anything

@@ -1,5 +1,6 @@
 using System.Windows;
 using System.Windows.Media;
+using Microsoft.Win32;
 
 namespace TgdSoundboard.Views;
 
@@ -7,6 +8,7 @@ public partial class StreamlabsSettingsDialog : Window
 {
     public string Token { get; private set; } = string.Empty;
     public bool AutoConnect { get; private set; }
+    public string ReplayFolder { get; private set; } = string.Empty;
     public bool WasSaved { get; private set; }
 
     public StreamlabsSettingsDialog()
@@ -20,6 +22,7 @@ public partial class StreamlabsSettingsDialog : Window
         var settings = App.MainViewModel.Settings;
         TokenTextBox.Text = settings.StreamlabsToken;
         AutoConnectCheckBox.IsChecked = settings.StreamlabsAutoConnect;
+        ReplayFolderTextBox.Text = settings.StreamlabsReplayFolder;
 
         UpdateConnectionStatus();
 
@@ -34,10 +37,25 @@ public partial class StreamlabsSettingsDialog : Window
         {
             var token = TokenTextBox.Text.Trim();
             var autoConnect = AutoConnectCheckBox.IsChecked ?? false;
+            var replayFolder = ReplayFolderTextBox.Text.Trim();
             // Use synchronous save to ensure it completes before window closes
-            Task.Run(async () => await App.MainViewModel.SaveStreamlabsSettingsAsync(token, autoConnect, string.Empty)).Wait();
+            Task.Run(async () => await App.MainViewModel.SaveStreamlabsSettingsAsync(token, autoConnect, string.Empty, replayFolder)).Wait();
         }
         base.OnClosing(e);
+    }
+
+    private void BrowseReplayFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog
+        {
+            Title = "Select Replay Folder",
+            InitialDirectory = ReplayFolderTextBox.Text
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            ReplayFolderTextBox.Text = dialog.FolderName;
+        }
     }
 
     protected override void OnClosed(EventArgs e)
@@ -89,9 +107,10 @@ public partial class StreamlabsSettingsDialog : Window
     {
         Token = TokenTextBox.Text.Trim();
         AutoConnect = AutoConnectCheckBox.IsChecked ?? false;
+        ReplayFolder = ReplayFolderTextBox.Text.Trim();
         WasSaved = true;
 
-        await App.MainViewModel.SaveStreamlabsSettingsAsync(Token, AutoConnect, string.Empty);
+        await App.MainViewModel.SaveStreamlabsSettingsAsync(Token, AutoConnect, string.Empty, ReplayFolder);
 
         DialogResult = true;
         Close();

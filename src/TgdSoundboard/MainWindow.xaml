@@ -753,7 +753,22 @@
                             materialDesign:ButtonAssist.CornerRadius="8">
                         <StackPanel Orientation="Horizontal">
                             <materialDesign:PackIcon Kind="Replay" VerticalAlignment="Center"/>
-                            <TextBlock Text="Replay" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                            <TextBlock Text="Save" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- View Replays Button -->
+                    <Button Click="ViewReplays_Click"
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Background="{DynamicResource ThemeBgTertiaryBrush}"
+                            Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="View Saved Replays"
+                            materialDesign:ButtonAssist.CornerRadius="8">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Video" VerticalAlignment="Center"/>
+                            <TextBlock Text="Replays" Margin="6,0,0,0" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 
