@@ -179,14 +179,18 @@ public partial class MainViewModel : ObservableObject
     [RelayCommand]
     private void PlayClip(SoundClip clip)
     {
+        Console.WriteLine($"[DEBUG] PlayClip called: Id={clip.Id}, Name={clip.Name}, IsPlaying={clip.IsPlaying}, HashCode={clip.GetHashCode()}");
         if (clip.IsPlaying)
         {
+            Console.WriteLine($"[DEBUG] -> Stopping clip {clip.Id}");
             App.AudioPlayback.StopClip(clip.Id);
         }
         else
         {
+            Console.WriteLine($"[DEBUG] -> Playing clip {clip.Id}");
             App.AudioPlayback.PlayClip(clip);
         }
+        Console.WriteLine($"[DEBUG] After action: IsPlaying={clip.IsPlaying}");
     }
 
     [RelayCommand]
@@ -351,9 +355,11 @@ public partial class MainViewModel : ObservableObject
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             var clip = FindClipById(clipId);
+            Console.WriteLine($"[DEBUG] OnClipStarted: clipId={clipId}, found={clip != null}, name={clip?.Name}");
             if (clip != null)
             {
                 clip.IsPlaying = true;
+                Console.WriteLine($"[DEBUG] Set IsPlaying=true for clip {clip.Name} (Id={clip.Id})");
             }
         });
     }
@@ -363,9 +369,11 @@ public partial class MainViewModel : ObservableObject
         System.Windows.Application.Current.Dispatcher.Invoke(() =>
         {
             var clip = FindClipById(clipId);
+            Console.WriteLine($"[DEBUG] OnClipStopped: clipId={clipId}, found={clip != null}, name={clip?.Name}");
             if (clip != null)
             {
                 clip.IsPlaying = false;
+                Console.WriteLine($"[DEBUG] Set IsPlaying=false for clip {clip.Name} (Id={clip.Id})");
             }
         });
     }
@@ -375,8 +383,13 @@ public partial class MainViewModel : ObservableObject
         foreach (var category in Categories)
         {
             var clip = category.Clips.FirstOrDefault(c => c.Id == clipId);
-            if (clip != null) return clip;
+            if (clip != null)
+            {
+                Console.WriteLine($"[DEBUG] FindClipById({clipId}): found in category '{category.Name}', HashCode={clip.GetHashCode()}");
+                return clip;
+            }
         }
+        Console.WriteLine($"[DEBUG] FindClipById({clipId}): NOT FOUND!");
         return null;
     }
 

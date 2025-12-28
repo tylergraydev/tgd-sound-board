@@ -1,6 +1,5 @@
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
 using TgdSoundboard.Services;
 
 namespace TgdSoundboard.Views;
@@ -8,24 +7,39 @@ namespace TgdSoundboard.Views;
 public partial class AppRoutingWindow : Window
 {
     private List<AudioApp>? _apps;
+    private HashSet<string> _addedSources = new(StringComparer.OrdinalIgnoreCase);
+    private bool _soundboardAdded = false;
 
     public AppRoutingWindow()
     {
         InitializeComponent();
         Loaded += OnLoaded;
-        Closed += OnClosed;
     }
 
     private void OnLoaded(object sender, RoutedEventArgs e)
     {
-        // Set initial state of master toggle
-        MasterRoutingToggle.IsChecked = App.AudioPlayback.IsAppRoutingEnabled;
+        UpdateConnectionStatus();
         LoadApps();
+
+        // Subscribe to connection changes
+        App.Streamlabs.ConnectionChanged += OnConnectionChanged;
     }
 
-    private void OnClosed(object? sender, EventArgs e)
+    protected override void OnClosed(EventArgs e)
     {
-        // Keep routing active even when window closes
+        App.Streamlabs.ConnectionChanged -= OnConnectionChanged;
+        base.OnClosed(e);
+    }
+
+    private void OnConnectionChanged(object? sender, bool connected)
+    {
+        Dispatcher.Invoke(UpdateConnectionStatus);
+    }
+
+    private void UpdateConnectionStatus()
+    {
+        ConnectionStatus.Text = App.Streamlabs.IsConnected ? "Connected" : "Not Connected";
+        AddSoundboardButton.IsEnabled = App.Streamlabs.IsConnected;
     }
 
     private void LoadApps()
@@ -36,12 +50,6 @@ public partial class AppRoutingWindow : Window
         var currentProcessId = Environment.ProcessId;
         _apps = _apps.Where(a => a.ProcessId != currentProcessId).ToList();
 
-        // Mark apps as routed based on current routing state
-        foreach (var app in _apps)
-        {
-            app.IsRouted = App.AudioPlayback.IsAppRouted(app.ProcessId);
-        }
-
         AppList.ItemsSource = _apps;
         EmptyState.Visibility = _apps.Count == 0 ? Visibility.Visible : Visibility.Collapsed;
     }
@@ -51,44 +59,107 @@ public partial class AppRoutingWindow : Window
         LoadApps();
     }
 
-    private void MasterRoutingToggle_Click(object sender, RoutedEventArgs e)
+    private async void AddSoundboard_Click(object sender, RoutedEventArgs e)
     {
-        if (MasterRoutingToggle.IsChecked == true)
+        if (!App.Streamlabs.IsConnected)
         {
-            try
+            MessageBox.Show(
+                "Not connected to Streamlabs Desktop.\n\nGo to Streamlabs Settings to configure the connection.",
+                "Not Connected",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        AddSoundboardButton.IsEnabled = false;
+
+        try
+        {
+            var success = await App.Streamlabs.AddSoundboardAudioSourceAsync();
+
+            if (success)
             {
-                App.AudioPlayback.EnableAppRouting();
+                _soundboardAdded = true;
+                UpdateSoundboardButtonState();
             }
-            catch (Exception ex)
+            else
             {
                 MessageBox.Show(
-                    $"Could not enable audio routing: {ex.Message}",
-                    "Routing Error",
+                    $"Failed to add audio source.\n\n{App.Streamlabs.LastError}",
+                    "Error",
                     MessageBoxButton.OK,
-                    MessageBoxImage.Warning);
-                MasterRoutingToggle.IsChecked = false;
+                    MessageBoxImage.Error);
+                AddSoundboardButton.IsEnabled = App.Streamlabs.IsConnected;
             }
         }
-        else
+        catch
         {
-            App.AudioPlayback.DisableAppRouting();
+            AddSoundboardButton.IsEnabled = App.Streamlabs.IsConnected;
         }
     }
 
-    private void VolumeSlider_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+    private void UpdateSoundboardButtonState()
     {
-        if (sender is Slider slider && slider.Tag is int processId)
+        if (_soundboardAdded)
         {
-            AppAudioService.SetAppVolume(processId, (float)e.NewValue);
+            AddSoundboardButton.IsEnabled = false;
+            AddSoundboardButton.Content = CreateAddedContent();
         }
     }
 
-    private void MuteToggle_Click(object sender, RoutedEventArgs e)
+    private StackPanel CreateAddedContent()
     {
-        if (sender is ToggleButton toggle && toggle.Tag is int processId)
+        var panel = new StackPanel { Orientation = Orientation.Horizontal };
+        panel.Children.Add(new MaterialDesignThemes.Wpf.PackIcon
         {
-            var muted = toggle.IsChecked ?? false;
-            AppAudioService.SetAppMute(processId, muted);
+            Kind = MaterialDesignThemes.Wpf.PackIconKind.Check,
+            VerticalAlignment = VerticalAlignment.Center,
+            Margin = new Thickness(0, 0, 8, 0)
+        });
+        panel.Children.Add(new TextBlock { Text = "ADDED", FontWeight = FontWeights.Bold });
+        return panel;
+    }
+
+    private async void AddApp_Click(object sender, RoutedEventArgs e)
+    {
+        if (!App.Streamlabs.IsConnected)
+        {
+            MessageBox.Show(
+                "Not connected to Streamlabs Desktop.\n\nGo to Streamlabs Settings to configure the connection.",
+                "Not Connected",
+                MessageBoxButton.OK,
+                MessageBoxImage.Warning);
+            return;
+        }
+
+        if (sender is Button button && button.Tag is string processName)
+        {
+            button.IsEnabled = false;
+
+            try
+            {
+                var success = await App.Streamlabs.AddApplicationAudioCaptureAsync(processName);
+
+                if (success)
+                {
+                    _addedSources.Add(processName);
+                    button.Content = CreateAddedContent();
+                    // Keep button disabled to show it's added
+                }
+                else
+                {
+                    MessageBox.Show(
+                        $"Failed to add audio source.\n\n{App.Streamlabs.LastError}",
+                        "Error",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Error);
+                    button.IsEnabled = true;
+                }
+            }
+            catch
+            {
+                button.IsEnabled = true;
+            }
         }
     }
 }

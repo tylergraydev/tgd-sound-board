@@ -5,8 +5,8 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
         mc:Ignorable="d"
-        Title="App Audio Routing"
-        Height="600" Width="700"
+        Title="Add Audio Sources to Streamlabs"
+        Height="600" Width="650"
         WindowStartupLocation="CenterOwner"
         Background="{DynamicResource ThemeBgPrimaryBrush}"
         TextElement.Foreground="{DynamicResource ThemeTextPrimaryBrush}"
@@ -24,68 +24,88 @@
         <Border Grid.Row="0" Background="{DynamicResource ThemeHeaderGradient}" Padding="24,20">
             <DockPanel>
                 <StackPanel DockPanel.Dock="Left">
-                    <TextBlock Text="APP AUDIO ROUTING" FontSize="20" FontWeight="Bold"/>
-                    <TextBlock Text="Route app audio through the soundboard for Streamlabs to capture" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,4,0,0"/>
+                    <TextBlock Text="STREAMLABS AUDIO SOURCES" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="Add audio sources directly to your Streamlabs scene" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,4,0,0"/>
                 </StackPanel>
-                <Button DockPanel.Dock="Right"
-                        Click="Refresh_Click"
-                        Style="{StaticResource MaterialDesignFlatButton}"
-                        Background="{DynamicResource ThemeBgTertiaryBrush}"
-                        Foreground="{DynamicResource ThemeTextPrimaryBrush}"
-                        Padding="16,8"
-                        VerticalAlignment="Center"
-                        materialDesign:ButtonAssist.CornerRadius="8">
-                    <StackPanel Orientation="Horizontal">
-                        <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center"/>
-                        <TextBlock Text="REFRESH" Margin="8,0,0,0" FontWeight="Bold"/>
-                    </StackPanel>
-                </Button>
-            </DockPanel>
-        </Border>
-
-        <!-- Master Toggle -->
-        <Border Grid.Row="1" Background="{DynamicResource ThemeBgSecondaryBrush}" Padding="20,16" Margin="20,20,20,0">
-            <Border.Style>
-                <Style TargetType="Border">
-                    <Setter Property="CornerRadius" Value="12"/>
-                </Style>
-            </Border.Style>
-            <DockPanel>
-                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <Border Width="48" Height="48" CornerRadius="24" Margin="0,0,16,0">
-                        <Border.Style>
-                            <Style TargetType="Border">
-                                <Setter Property="Background" Value="{DynamicResource ThemeBgTertiaryBrush}"/>
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Ellipse Width="10" Height="10" Margin="0,0,8,0">
+                        <Ellipse.Style>
+                            <Style TargetType="Ellipse">
+                                <Setter Property="Fill" Value="{DynamicResource ThemeDangerBrush}"/>
                                 <Style.Triggers>
-                                    <DataTrigger Binding="{Binding ElementName=MasterRoutingToggle, Path=IsChecked}" Value="True">
-                                        <Setter Property="Background" Value="{DynamicResource ThemeSuccessBrush}"/>
+                                    <DataTrigger Binding="{Binding IsConnected}" Value="True">
+                                        <Setter Property="Fill" Value="{DynamicResource ThemeSuccessBrush}"/>
                                     </DataTrigger>
                                 </Style.Triggers>
                             </Style>
-                        </Border.Style>
-                        <materialDesign:PackIcon Kind="VolumeSource" Width="24" Height="24"
+                        </Ellipse.Style>
+                    </Ellipse>
+                    <TextBlock x:Name="ConnectionStatus" Text="Not Connected" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextSecondaryBrush}"/>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Add Soundboard Button -->
+        <Border Grid.Row="1" Background="{DynamicResource ThemeBgSecondaryBrush}" Padding="20" Margin="20,20,20,0" CornerRadius="12">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
+                    <Border Width="48" Height="48" CornerRadius="24" Background="{DynamicResource ThemeAccentBrush}" Margin="0,0,16,0">
+                        <materialDesign:PackIcon Kind="MusicNote" Width="24" Height="24"
                                                  HorizontalAlignment="Center" VerticalAlignment="Center"/>
                     </Border>
                     <StackPanel VerticalAlignment="Center">
-                        <TextBlock Text="System Audio Pass-through" FontSize="16" FontWeight="Bold"/>
-                        <TextBlock Text="Capture and route system audio through the soundboard"
+                        <TextBlock Text="TGD Soundboard" FontSize="16" FontWeight="Bold"/>
+                        <TextBlock Text="Add soundboard audio to your stream"
                                    Foreground="{DynamicResource ThemeTextMutedBrush}" FontSize="12"/>
                     </StackPanel>
                 </StackPanel>
-                <ToggleButton x:Name="MasterRoutingToggle"
-                              DockPanel.Dock="Right"
-                              Style="{StaticResource MaterialDesignSwitchToggleButton}"
-                              Click="MasterRoutingToggle_Click"
-                              VerticalAlignment="Center"
-                              HorizontalAlignment="Right"/>
+                <Button x:Name="AddSoundboardButton"
+                        DockPanel.Dock="Right"
+                        Click="AddSoundboard_Click"
+                        Style="{StaticResource MaterialDesignRaisedButton}"
+                        Background="{DynamicResource ThemeAccentBrush}"
+                        Foreground="White"
+                        Padding="20,8"
+                        VerticalAlignment="Center"
+                        HorizontalAlignment="Right"
+                        materialDesign:ButtonAssist.CornerRadius="8">
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:PackIcon Kind="Plus" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                        <TextBlock Text="ADD TO STREAMLABS" FontWeight="Bold"/>
+                    </StackPanel>
+                </Button>
             </DockPanel>
         </Border>
 
         <!-- App List -->
         <Border Grid.Row="2" Background="{DynamicResource ThemeBgSecondaryBrush}" Margin="20" CornerRadius="12">
             <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <!-- Section Header -->
+                <Border Grid.Row="0" Padding="16,12" BorderBrush="{DynamicResource ThemeBgTertiaryBrush}" BorderThickness="0,0,0,1">
+                    <DockPanel>
+                        <TextBlock Text="OTHER APPLICATIONS" FontSize="12" FontWeight="Bold"
+                                   Foreground="{DynamicResource ThemeTextMutedBrush}" VerticalAlignment="Center"/>
+                        <Button DockPanel.Dock="Right"
+                                Click="Refresh_Click"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Foreground="{DynamicResource ThemeTextSecondaryBrush}"
+                                Padding="8,4"
+                                VerticalAlignment="Center">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Refresh" Width="16" Height="16" VerticalAlignment="Center"/>
+                                <TextBlock Text="Refresh" Margin="4,0,0,0" FontSize="12"/>
+                            </StackPanel>
+                        </Button>
+                    </DockPanel>
+                </Border>
+
                 <!-- Empty state -->
-                <StackPanel x:Name="EmptyState" VerticalAlignment="Center" HorizontalAlignment="Center"
+                <StackPanel x:Name="EmptyState" Grid.Row="1" VerticalAlignment="Center" HorizontalAlignment="Center"
                             Visibility="Collapsed">
                     <materialDesign:PackIcon Kind="VolumeOff" Width="48" Height="48"
                                              HorizontalAlignment="Center"
@@ -99,77 +119,41 @@
                 </StackPanel>
 
                 <!-- App list -->
-                <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="8">
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Padding="8">
                     <ItemsControl x:Name="AppList">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Margin="8" Padding="16">
-                                    <Grid>
-                                        <Grid.ColumnDefinitions>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                            <ColumnDefinition Width="Auto"/>
-                                        </Grid.ColumnDefinitions>
-
+                                    <DockPanel>
                                         <!-- App Icon -->
-                                        <Border Grid.Column="0" Width="40" Height="40" CornerRadius="8" Margin="0,0,16,0">
-                                            <Border.Style>
-                                                <Style TargetType="Border">
-                                                    <Setter Property="Background" Value="{DynamicResource ThemeAccentBrush}"/>
-                                                    <Style.Triggers>
-                                                        <DataTrigger Binding="{Binding IsRouted}" Value="True">
-                                                            <Setter Property="Background" Value="{DynamicResource ThemeSuccessBrush}"/>
-                                                        </DataTrigger>
-                                                    </Style.Triggers>
-                                                </Style>
-                                            </Border.Style>
+                                        <Border DockPanel.Dock="Left" Width="40" Height="40" CornerRadius="8"
+                                                Background="{DynamicResource ThemeAccentBrush}" Margin="0,0,16,0">
                                             <materialDesign:PackIcon Kind="Application" Width="24" Height="24"
                                                                      HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                         </Border>
 
+                                        <!-- Add Button -->
+                                        <Button DockPanel.Dock="Right"
+                                                Click="AddApp_Click"
+                                                Tag="{Binding ProcessName}"
+                                                Style="{StaticResource MaterialDesignOutlinedButton}"
+                                                BorderBrush="{DynamicResource ThemeAccentBrush}"
+                                                Foreground="{DynamicResource ThemeAccentBrush}"
+                                                Padding="16,6"
+                                                VerticalAlignment="Center"
+                                                materialDesign:ButtonAssist.CornerRadius="8">
+                                            <StackPanel Orientation="Horizontal">
+                                                <materialDesign:PackIcon Kind="Plus" Width="16" Height="16" VerticalAlignment="Center" Margin="0,0,6,0"/>
+                                                <TextBlock Text="ADD" FontWeight="Bold" FontSize="12"/>
+                                            </StackPanel>
+                                        </Button>
+
                                         <!-- App Name -->
-                                        <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                        <StackPanel VerticalAlignment="Center">
                                             <TextBlock Text="{Binding DisplayName}" FontSize="14" FontWeight="Medium" TextTrimming="CharacterEllipsis"/>
                                             <TextBlock Text="{Binding ProcessName}" FontSize="11" Foreground="{DynamicResource ThemeTextMutedBrush}"/>
                                         </StackPanel>
-
-                                        <!-- Volume Slider -->
-                                        <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="16,0">
-                                            <materialDesign:PackIcon Kind="VolumeHigh" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,8,0"/>
-                                            <Slider Width="100" Minimum="0" Maximum="1" Value="{Binding Volume}"
-                                                    ValueChanged="VolumeSlider_ValueChanged"
-                                                    Tag="{Binding ProcessId}"/>
-                                            <TextBlock Text="{Binding Volume, StringFormat={}{0:P0}}"
-                                                       Width="40" Margin="8,0,0,0"
-                                                       VerticalAlignment="Center"
-                                                       Foreground="{DynamicResource ThemeTextMutedBrush}"/>
-                                        </StackPanel>
-
-                                        <!-- Mute Toggle -->
-                                        <ToggleButton Grid.Column="3"
-                                                      Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
-                                                      IsChecked="{Binding IsMuted}"
-                                                      Click="MuteToggle_Click"
-                                                      Tag="{Binding ProcessId}"
-                                                      Width="40" Height="40"
-                                                      ToolTip="Mute this app (won't be heard in stream)">
-                                            <materialDesign:PackIcon>
-                                                <materialDesign:PackIcon.Style>
-                                                    <Style TargetType="materialDesign:PackIcon">
-                                                        <Setter Property="Kind" Value="VolumeHigh"/>
-                                                        <Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondaryBrush}"/>
-                                                        <Style.Triggers>
-                                                            <DataTrigger Binding="{Binding IsMuted}" Value="True">
-                                                                <Setter Property="Kind" Value="VolumeOff"/>
-                                                                <Setter Property="Foreground" Value="{DynamicResource ThemeDangerBrush}"/>
-                                                            </DataTrigger>
-                                                        </Style.Triggers>
-                                                    </Style>
-                                                </materialDesign:PackIcon.Style>
-                                            </materialDesign:PackIcon>
-                                        </ToggleButton>
-                                    </Grid>
+                                    </DockPanel>
                                 </Border>
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
@@ -182,12 +166,12 @@
         <Border Grid.Row="3" Padding="24,16" Background="{DynamicResource ThemeBgSecondaryBrush}">
             <StackPanel>
                 <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
-                    <materialDesign:PackIcon Kind="AlertOutline" Foreground="{DynamicResource NeonBlueBrush}"
+                    <materialDesign:PackIcon Kind="InformationOutline" Foreground="{DynamicResource ThemeAccentBrush}"
                                              VerticalAlignment="Center" Margin="0,0,8,0"/>
-                    <TextBlock Text="To avoid double audio: Set soundboard output to a different device than your headphones."
+                    <TextBlock Text="Click 'Add' to create an Application Audio Capture source in Streamlabs."
                                Foreground="{DynamicResource ThemeTextSecondaryBrush}" VerticalAlignment="Center"/>
                 </StackPanel>
-                <TextBlock Text="Use Settings → Output Device to pick a virtual cable or unused device. Enable Monitor (headphone icon) to hear clips locally."
+                <TextBlock Text="Make sure Streamlabs Desktop is running and you're connected (configure in Streamlabs Settings)."
                            Foreground="{DynamicResource ThemeTextMutedBrush}" HorizontalAlignment="Center" Margin="0,8,0,0" FontSize="11"
                            TextWrapping="Wrap" TextAlignment="Center"/>
             </StackPanel>

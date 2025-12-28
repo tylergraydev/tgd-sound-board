@@ -182,7 +182,7 @@ public partial class MainWindow : Window
         }
     }
 
-    private async void ClipCard_Click(object sender, MouseButtonEventArgs e)
+    private void ClipCard_Click(object sender, MouseButtonEventArgs e)
     {
         // Capture start point for drag detection
         if (sender is FrameworkElement element)
@@ -192,18 +192,8 @@ public partial class MainWindow : Window
 
         if (sender is FrameworkElement elem && elem.DataContext is SoundClip clip)
         {
-            if (e.ClickCount == 2)
-            {
-                // Double-click to toggle loop
-                e.Handled = true;
-                clip.IsLooping = !clip.IsLooping;
-                await App.Database.UpdateClipAsync(clip);
-            }
-            else
-            {
-                // Single-click to play
-                App.MainViewModel.PlayClipCommand.Execute(clip);
-            }
+            // Single-click to play (loop toggle is in context menu)
+            App.MainViewModel.PlayClipCommand.Execute(clip);
         }
     }
 
@@ -422,26 +412,18 @@ public partial class MainWindow : Window
 
     private async void ToggleLoop_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem menuItem)
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
         {
-            var contextMenu = menuItem.Parent as ContextMenu;
-            if (contextMenu?.PlacementTarget is FrameworkElement element && element.DataContext is SoundClip clip)
-            {
-                await App.Database.UpdateClipAsync(clip);
-            }
+            await App.Database.UpdateClipAsync(clip);
         }
     }
 
     private async void ToggleFavorite_Click(object sender, RoutedEventArgs e)
     {
-        if (sender is MenuItem menuItem)
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
         {
-            var contextMenu = menuItem.Parent as ContextMenu;
-            if (contextMenu?.PlacementTarget is FrameworkElement element && element.DataContext is SoundClip clip)
-            {
-                await App.Database.UpdateClipAsync(clip);
-                App.MainViewModel.RefreshFavorites();
-            }
+            await App.Database.UpdateClipAsync(clip);
+            App.MainViewModel.RefreshFavorites();
         }
     }
 
@@ -617,6 +599,23 @@ public partial class MainWindow : Window
         var dialog = new StreamlabsSettingsDialog();
         dialog.Owner = this;
         dialog.ShowDialog();
+    }
+
+    private async void StreamlabsStatus_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+    {
+        // If already connected, don't do anything
+        if (App.Streamlabs.IsConnected) return;
+
+        // If no token configured, open settings
+        if (string.IsNullOrEmpty(App.MainViewModel.Settings.StreamlabsToken))
+        {
+            StreamlabsSettings_Click(sender, e);
+            return;
+        }
+
+        // Try to connect
+        App.MainViewModel.StreamlabsStatus = "Connecting...";
+        await App.Streamlabs.ConnectAsync();
     }
 
     #endregion

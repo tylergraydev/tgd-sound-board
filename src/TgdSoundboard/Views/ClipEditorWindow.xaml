@@ -98,6 +98,8 @@
                      Text="{Binding ClipName, UpdateSourceTrigger=PropertyChanged}"
                      Margin="20,0,0,0"
                      materialDesign:HintAssist.Hint="Clip Name"
+                     Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                     CaretBrush="{DynamicResource ThemeTextPrimaryBrush}"
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
         </Grid>
 

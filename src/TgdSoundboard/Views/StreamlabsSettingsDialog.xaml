@@ -33,6 +33,8 @@
             <TextBox x:Name="TokenTextBox"
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                      materialDesign:HintAssist.Hint="Paste your token here"
+                     Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                     CaretBrush="{DynamicResource ThemeTextPrimaryBrush}"
                      Background="{DynamicResource ThemeBgSecondaryBrush}"/>
             <TextBlock Text="Find this in Streamlabs: Settings → Remote Control → QR Code → Show Details"
                        FontSize="11"

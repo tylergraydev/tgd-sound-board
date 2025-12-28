@@ -84,6 +84,9 @@ public class AudioPlaybackService : IDisposable
                 var reader = new AudioFileReader(clip.FilePath);
                 ISampleProvider sampleProvider = reader;
 
+                // Convert to mixer format (44100Hz stereo) if needed
+                sampleProvider = ConvertToMixerFormat(sampleProvider);
+
                 // Apply speed change if configured
                 if (Math.Abs(clip.PlaybackSpeed - 1.0f) > 0.01f)
                 {
@@ -121,6 +124,9 @@ public class AudioPlaybackService : IDisposable
                         var monitorReader = new AudioFileReader(clip.FilePath);
                         ISampleProvider monitorProvider = monitorReader;
 
+                        // Convert to mixer format
+                        monitorProvider = ConvertToMixerFormat(monitorProvider);
+
                         if (Math.Abs(clip.PlaybackSpeed - 1.0f) > 0.01f)
                         {
                             monitorProvider = new SpeedControlSampleProvider(monitorProvider, clip.PlaybackSpeed);
@@ -157,7 +163,7 @@ public class AudioPlaybackService : IDisposable
             }
             catch (Exception ex)
             {
-                System.Diagnostics.Debug.WriteLine($"Error playing clip: {ex.Message}");
+                Console.WriteLine($"[ERROR] Exception playing clip {clip.Id} ({clip.Name}): {ex.GetType().Name}: {ex.Message}");
                 return;
             }
         }
@@ -253,6 +259,10 @@ public class AudioPlaybackService : IDisposable
 
         if (playback == null) return;
 
+        var totalDuration = playback.Reader.TotalTime;
+        var startTime = DateTime.Now;
+        Console.WriteLine($"[Monitor] Started monitoring clip {clip.Id} ({clip.Name}), Duration={totalDuration.TotalSeconds:F1}s, IsLooping={playback.IsLooping}");
+
         while (true)
         {
             await Task.Delay(100);
@@ -260,32 +270,72 @@ public class AudioPlaybackService : IDisposable
             lock (_lock)
             {
                 if (!_activePlaybacks.ContainsKey(clip.Id))
+                {
+                    Console.WriteLine($"[Monitor] Clip {clip.Id} was stopped externally");
                     return; // Was stopped externally
+                }
             }
 
-            // Check if near end for fade out
-            var remaining = playback.Reader.TotalTime - playback.Reader.CurrentTime;
-            if (playback.FadeOutSeconds > 0 && remaining.TotalSeconds <= playback.FadeOutSeconds && !playback.FadeOutStarted)
+            try
             {
-                playback.FadeOutStarted = true;
-                _ = ApplyFadeOutAsync(playback);
-            }
+                var elapsed = DateTime.Now - startTime;
+                var remaining = totalDuration - elapsed;
 
-            if (playback.Reader.Position >= playback.Reader.Length)
+                // Check if near end for fade out
+                if (playback.FadeOutSeconds > 0 && remaining.TotalSeconds <= playback.FadeOutSeconds && !playback.FadeOutStarted)
+                {
+                    playback.FadeOutStarted = true;
+                    _ = ApplyFadeOutAsync(playback);
+                }
+
+                // Check if playback finished (use time-based tracking since resampler buffers)
+                if (elapsed >= totalDuration)
+                {
+                    Console.WriteLine($"[Monitor] Clip {clip.Id} reached end: elapsed={elapsed.TotalSeconds:F1}s, duration={totalDuration.TotalSeconds:F1}s, IsLooping={playback.IsLooping}");
+                    if (playback.IsLooping)
+                    {
+                        Console.WriteLine($"[Monitor] Looping clip {clip.Id}");
+                        playback.Reader.Position = 0;
+                        playback.FadeOutStarted = false;
+                        startTime = DateTime.Now; // Reset timer for loop
+                    }
+                    else
+                    {
+                        Console.WriteLine($"[Monitor] Clip {clip.Id} finished, stopping");
+                        break;
+                    }
+                }
+            }
+            catch (Exception ex)
             {
-                if (playback.IsLooping)
-                {
-                    playback.Reader.Position = 0;
-                    playback.FadeOutStarted = false;
-                }
-                else
-                {
-                    break;
-                }
+                Console.WriteLine($"[Monitor] Exception for clip {clip.Id}: {ex.Message}");
+                break;
             }
         }
 
         StopClip(clip.Id);
+    }
+
+    private ISampleProvider ConvertToMixerFormat(ISampleProvider source)
+    {
+        // Target format: 44100Hz stereo (matches mixer)
+        const int targetSampleRate = 44100;
+
+        var result = source;
+
+        // Convert mono to stereo if needed
+        if (result.WaveFormat.Channels == 1)
+        {
+            result = new MonoToStereoSampleProvider(result);
+        }
+
+        // Resample if sample rate doesn't match
+        if (result.WaveFormat.SampleRate != targetSampleRate)
+        {
+            result = new WdlResamplingSampleProvider(result, targetSampleRate);
+        }
+
+        return result;
     }
 
     private async Task ApplyFadeOutAsync(PlaybackInstance playback)

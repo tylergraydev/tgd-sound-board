@@ -34,6 +34,8 @@
                      x:Name="NameTextBox"
                      Style="{StaticResource MaterialDesignOutlinedTextBox}"
                      materialDesign:HintAssist.Hint="Clip name"
+                     Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                     CaretBrush="{DynamicResource ThemeTextPrimaryBrush}"
                      FontSize="14"
                      Margin="0,0,0,20"
                      KeyDown="NameTextBox_KeyDown"/>

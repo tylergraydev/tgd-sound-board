@@ -119,28 +119,6 @@
                     </StackPanel>
 
                     <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                        <!-- Stream Output Device -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,12,0" ToolTip="Stream Output: Where Streamlabs captures from">
-                            <materialDesign:PackIcon Kind="Broadcast" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,6,0"/>
-                            <ComboBox Width="140"
-                                      VerticalAlignment="Center"
-                                      Style="{StaticResource MaterialDesignComboBox}"
-                                      ItemsSource="{Binding OutputDevices}"
-                                      SelectedItem="{Binding SelectedOutputDevice}"
-                                      DisplayMemberPath="Name"/>
-                        </StackPanel>
-
-                        <!-- Monitor Device -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,12,0" ToolTip="Monitor: Your headphones (hear clips here)">
-                            <materialDesign:PackIcon Kind="Headphones" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,6,0"/>
-                            <ComboBox Width="140"
-                                      VerticalAlignment="Center"
-                                      Style="{StaticResource MaterialDesignComboBox}"
-                                      ItemsSource="{Binding OutputDevices}"
-                                      SelectedItem="{Binding SelectedMonitorDevice}"
-                                      DisplayMemberPath="Name"/>
-                        </StackPanel>
-
                         <!-- Theme Selector -->
                         <ComboBox x:Name="ThemeSelector"
                                   Width="100"
@@ -153,58 +131,20 @@
                             <ComboBoxItem Content="Neon" Tag="Neon" IsSelected="True"/>
                         </ComboBox>
 
-                        <!-- App Routing Button -->
+                        <!-- Add to Streamlabs Button -->
                         <Button Click="OpenAppRouting_Click"
                                 Style="{StaticResource MaterialDesignFlatButton}"
                                 Background="{DynamicResource ThemeBgTertiaryBrush}"
                                 Foreground="{DynamicResource ThemeTextPrimaryBrush}"
                                 Padding="12,6"
                                 Margin="0,0,12,0"
-                                ToolTip="Route app audio through soundboard"
+                                ToolTip="Add audio sources to Streamlabs"
                                 materialDesign:ButtonAssist.CornerRadius="8">
                             <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="VolumeSource" VerticalAlignment="Center"/>
-                                <TextBlock Text="Route Apps" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                                <materialDesign:PackIcon Kind="Broadcast" VerticalAlignment="Center"/>
+                                <TextBlock Text="Add Sources" Margin="6,0,0,0" VerticalAlignment="Center"/>
                             </StackPanel>
                         </Button>
-
-                        <!-- Mixer Button -->
-                        <Button Click="OpenMixer_Click"
-                                Style="{StaticResource MaterialDesignFlatButton}"
-                                Background="{DynamicResource ThemeBgTertiaryBrush}"
-                                Foreground="{DynamicResource ThemeTextPrimaryBrush}"
-                                Padding="12,6"
-                                Margin="0,0,12,0"
-                                materialDesign:ButtonAssist.CornerRadius="8">
-                            <StackPanel Orientation="Horizontal">
-                                <materialDesign:PackIcon Kind="TuneVertical" VerticalAlignment="Center"/>
-                                <TextBlock Text="Mixer" Margin="6,0,0,0" VerticalAlignment="Center"/>
-                            </StackPanel>
-                        </Button>
-
-                        <!-- Monitor Toggle -->
-                        <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Padding="8,6" Margin="0,0,12,0">
-                            <ToggleButton x:Name="MonitorToggle"
-                                          Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
-                                          IsChecked="{Binding IsMonitorEnabled}"
-                                          Command="{Binding ToggleMonitorCommand}"
-                                          ToolTip="Monitor: Hear soundboard in your headphones"
-                                          Width="36" Height="28"
-                                          Padding="0">
-                                <materialDesign:PackIcon Kind="Headphones" Width="18" Height="18">
-                                    <materialDesign:PackIcon.Style>
-                                        <Style TargetType="materialDesign:PackIcon">
-                                            <Setter Property="Foreground" Value="{DynamicResource ThemeTextSecondaryBrush}"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding IsMonitorEnabled}" Value="True">
-                                                    <Setter Property="Foreground" Value="{DynamicResource ThemeAccentBrush}"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </materialDesign:PackIcon.Style>
-                                </materialDesign:PackIcon>
-                            </ToggleButton>
-                        </Border>
 
                         <!-- Master Volume -->
                         <Border Background="{DynamicResource ThemeBgTertiaryBrush}" CornerRadius="8" Padding="12,6" Margin="0,0,12,0">
@@ -431,13 +371,14 @@
                                 </StackPanel>
                             </Button>
                             <!-- More menu for import/export config -->
-                            <Menu Background="Transparent">
-                                <MenuItem Padding="0">
+                            <Menu Background="Transparent" VerticalAlignment="Center">
+                                <MenuItem Padding="0" MinWidth="0" MinHeight="0">
                                     <MenuItem.Header>
                                         <Border Background="{DynamicResource ThemeBgTertiaryBrush}"
                                                 CornerRadius="8"
-                                                Padding="10,8">
-                                            <materialDesign:PackIcon Kind="DotsVertical"/>
+                                                Padding="10,8"
+                                                Margin="-4,-2">
+                                            <materialDesign:PackIcon Kind="DotsVertical" Foreground="{DynamicResource ThemeTextPrimaryBrush}"/>
                                         </Border>
                                     </MenuItem.Header>
                                     <MenuItem Header="Export Config" Click="ExportConfig_Click">
@@ -520,6 +461,165 @@
                                     <Border.BorderBrush>
                                         <SolidColorBrush Color="Transparent"/>
                                     </Border.BorderBrush>
+                                    <Border.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Rename" Click="EditClip_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Pencil"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Duplicate" Click="DuplicateClip_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="ContentCopy"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Set Hotkey" Click="SetHotkey_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Keyboard"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Volume" StaysOpenOnClick="True">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="VolumeHigh"/>
+                                                </MenuItem.Icon>
+                                                <StackPanel Orientation="Horizontal" Margin="8,4">
+                                                    <Slider Width="120"
+                                                            Minimum="0" Maximum="1"
+                                                            Value="{Binding Volume}"
+                                                            ValueChanged="ClipVolume_Changed"
+                                                            TickFrequency="0.1"
+                                                            IsSnapToTickEnabled="False"/>
+                                                    <TextBlock Text="{Binding Volume, StringFormat={}{0:P0}}"
+                                                               Width="40"
+                                                               Margin="8,0,0,0"
+                                                               VerticalAlignment="Center"/>
+                                                </StackPanel>
+                                            </MenuItem>
+                                            <MenuItem Header="Color">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Palette"/>
+                                                </MenuItem.Icon>
+                                                <MenuItem Header="Purple" Click="SetClipColor_Click" Tag="#9D4EDD">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#9D4EDD"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Pink" Click="SetClipColor_Click" Tag="#E91E63">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#E91E63"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Red" Click="SetClipColor_Click" Tag="#F44336">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#F44336"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Orange" Click="SetClipColor_Click" Tag="#FF9800">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#FF9800"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Yellow" Click="SetClipColor_Click" Tag="#FFEB3B">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#FFEB3B"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Green" Click="SetClipColor_Click" Tag="#4CAF50">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#4CAF50"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Teal" Click="SetClipColor_Click" Tag="#00BCD4">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#00BCD4"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Blue" Click="SetClipColor_Click" Tag="#2196F3">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#2196F3"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                                <MenuItem Header="Gray" Click="SetClipColor_Click" Tag="#607D8B">
+                                                    <MenuItem.Icon>
+                                                        <Ellipse Width="16" Height="16" Fill="#607D8B"/>
+                                                    </MenuItem.Icon>
+                                                </MenuItem>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="Loop" IsCheckable="True" IsChecked="{Binding IsLooping}" Click="ToggleLoop_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Repeat"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Favorite" IsCheckable="True" IsChecked="{Binding IsFavorite}" Click="ToggleFavorite_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Star"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <MenuItem Header="Fade Effects">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="TransitionMasked"/>
+                                                </MenuItem.Icon>
+                                                <StackPanel Margin="8,4" Width="180">
+                                                    <TextBlock Text="Fade In (seconds)" FontSize="11" Margin="0,0,0,4"/>
+                                                    <Slider Minimum="0" Maximum="3"
+                                                            Value="{Binding FadeInSeconds}"
+                                                            ValueChanged="FadeIn_Changed"
+                                                            TickFrequency="0.5"
+                                                            IsSnapToTickEnabled="True"/>
+                                                    <TextBlock Text="Fade Out (seconds)" FontSize="11" Margin="0,8,0,4"/>
+                                                    <Slider Minimum="0" Maximum="3"
+                                                            Value="{Binding FadeOutSeconds}"
+                                                            ValueChanged="FadeOut_Changed"
+                                                            TickFrequency="0.5"
+                                                            IsSnapToTickEnabled="True"/>
+                                                </StackPanel>
+                                            </MenuItem>
+                                            <MenuItem Header="Speed/Pitch">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Speedometer"/>
+                                                </MenuItem.Icon>
+                                                <StackPanel Margin="8,4" Width="200">
+                                                    <DockPanel>
+                                                        <TextBlock Text="Speed" FontSize="11" DockPanel.Dock="Left"/>
+                                                        <TextBlock Text="{Binding PlaybackSpeed, StringFormat={}{0:0.0}x}" FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
+                                                    </DockPanel>
+                                                    <Slider Minimum="0.5" Maximum="2.0"
+                                                            Value="{Binding PlaybackSpeed}"
+                                                            ValueChanged="PlaybackSpeed_Changed"
+                                                            TickFrequency="0.1"
+                                                            IsSnapToTickEnabled="True"
+                                                            Margin="0,4,0,8"/>
+                                                    <DockPanel>
+                                                        <TextBlock Text="Pitch" FontSize="11" DockPanel.Dock="Left"/>
+                                                        <TextBlock FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                                                            <TextBlock.Text>
+                                                                <Binding Path="PitchSemitones" StringFormat="{}{0:+#;-#;0} semitones"/>
+                                                            </TextBlock.Text>
+                                                        </TextBlock>
+                                                    </DockPanel>
+                                                    <Slider Minimum="-12" Maximum="12"
+                                                            Value="{Binding PitchSemitones}"
+                                                            ValueChanged="PitchSemitones_Changed"
+                                                            TickFrequency="1"
+                                                            IsSnapToTickEnabled="True"
+                                                            Margin="0,4,0,0"/>
+                                                </StackPanel>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="Add to Queue" Click="AddToQueue_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="PlaylistPlus"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                            <Separator/>
+                                            <MenuItem Header="Delete" Click="DeleteClip_Click">
+                                                <MenuItem.Icon>
+                                                    <materialDesign:PackIcon Kind="Delete"/>
+                                                </MenuItem.Icon>
+                                            </MenuItem>
+                                        </ContextMenu>
+                                    </Border.ContextMenu>
                                     <Grid>
                                         <!-- Loop indicator -->
                                         <materialDesign:PackIcon Kind="Repeat"
@@ -572,167 +672,6 @@
                                                 <TextBlock Text="{Binding Hotkey}" FontSize="10" Foreground="{DynamicResource ThemeTextMutedBrush}"/>
                                             </Border>
                                         </StackPanel>
-
-                                        <!-- Context menu -->
-                                        <Grid.ContextMenu>
-                                            <ContextMenu>
-                                                <MenuItem Header="Rename" Click="EditClip_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Pencil"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <MenuItem Header="Duplicate" Click="DuplicateClip_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="ContentCopy"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <MenuItem Header="Set Hotkey" Click="SetHotkey_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Keyboard"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <MenuItem Header="Volume" StaysOpenOnClick="True">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="VolumeHigh"/>
-                                                    </MenuItem.Icon>
-                                                    <StackPanel Orientation="Horizontal" Margin="8,4">
-                                                        <Slider Width="120"
-                                                                Minimum="0" Maximum="1"
-                                                                Value="{Binding Volume}"
-                                                                ValueChanged="ClipVolume_Changed"
-                                                                TickFrequency="0.1"
-                                                                IsSnapToTickEnabled="False"/>
-                                                        <TextBlock Text="{Binding Volume, StringFormat={}{0:P0}}"
-                                                                   Width="40"
-                                                                   Margin="8,0,0,0"
-                                                                   VerticalAlignment="Center"/>
-                                                    </StackPanel>
-                                                </MenuItem>
-                                                <MenuItem Header="Color">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Palette"/>
-                                                    </MenuItem.Icon>
-                                                    <MenuItem Header="Purple" Click="SetClipColor_Click" Tag="#9D4EDD">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#9D4EDD"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Pink" Click="SetClipColor_Click" Tag="#E91E63">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#E91E63"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Red" Click="SetClipColor_Click" Tag="#F44336">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#F44336"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Orange" Click="SetClipColor_Click" Tag="#FF9800">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#FF9800"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Yellow" Click="SetClipColor_Click" Tag="#FFEB3B">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#FFEB3B"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Green" Click="SetClipColor_Click" Tag="#4CAF50">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#4CAF50"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Teal" Click="SetClipColor_Click" Tag="#00BCD4">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#00BCD4"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Blue" Click="SetClipColor_Click" Tag="#2196F3">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#2196F3"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                    <MenuItem Header="Gray" Click="SetClipColor_Click" Tag="#607D8B">
-                                                        <MenuItem.Icon>
-                                                            <Ellipse Width="16" Height="16" Fill="#607D8B"/>
-                                                        </MenuItem.Icon>
-                                                    </MenuItem>
-                                                </MenuItem>
-                                                <Separator/>
-                                                <MenuItem Header="Loop" IsCheckable="True" IsChecked="{Binding IsLooping}" Click="ToggleLoop_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Repeat"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <MenuItem Header="Favorite" IsCheckable="True" IsChecked="{Binding IsFavorite}" Click="ToggleFavorite_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Star"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <MenuItem Header="Fade Effects">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="TransitionMasked"/>
-                                                    </MenuItem.Icon>
-                                                    <StackPanel Margin="8,4" Width="180">
-                                                        <TextBlock Text="Fade In (seconds)" FontSize="11" Margin="0,0,0,4"/>
-                                                        <Slider Minimum="0" Maximum="3"
-                                                                Value="{Binding FadeInSeconds}"
-                                                                ValueChanged="FadeIn_Changed"
-                                                                TickFrequency="0.5"
-                                                                IsSnapToTickEnabled="True"/>
-                                                        <TextBlock Text="Fade Out (seconds)" FontSize="11" Margin="0,8,0,4"/>
-                                                        <Slider Minimum="0" Maximum="3"
-                                                                Value="{Binding FadeOutSeconds}"
-                                                                ValueChanged="FadeOut_Changed"
-                                                                TickFrequency="0.5"
-                                                                IsSnapToTickEnabled="True"/>
-                                                    </StackPanel>
-                                                </MenuItem>
-                                                <MenuItem Header="Speed/Pitch">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Speedometer"/>
-                                                    </MenuItem.Icon>
-                                                    <StackPanel Margin="8,4" Width="200">
-                                                        <DockPanel>
-                                                            <TextBlock Text="Speed" FontSize="11" DockPanel.Dock="Left"/>
-                                                            <TextBlock Text="{Binding PlaybackSpeed, StringFormat={}{0:0.0}x}" FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right"/>
-                                                        </DockPanel>
-                                                        <Slider Minimum="0.5" Maximum="2.0"
-                                                                Value="{Binding PlaybackSpeed}"
-                                                                ValueChanged="PlaybackSpeed_Changed"
-                                                                TickFrequency="0.1"
-                                                                IsSnapToTickEnabled="True"
-                                                                Margin="0,4,0,8"/>
-                                                        <DockPanel>
-                                                            <TextBlock Text="Pitch" FontSize="11" DockPanel.Dock="Left"/>
-                                                            <TextBlock FontSize="11" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                                                                <TextBlock.Text>
-                                                                    <Binding Path="PitchSemitones" StringFormat="{}{0:+#;-#;0} semitones"/>
-                                                                </TextBlock.Text>
-                                                            </TextBlock>
-                                                        </DockPanel>
-                                                        <Slider Minimum="-12" Maximum="12"
-                                                                Value="{Binding PitchSemitones}"
-                                                                ValueChanged="PitchSemitones_Changed"
-                                                                TickFrequency="1"
-                                                                IsSnapToTickEnabled="True"
-                                                                Margin="0,4,0,0"/>
-                                                    </StackPanel>
-                                                </MenuItem>
-                                                <Separator/>
-                                                <MenuItem Header="Add to Queue" Click="AddToQueue_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="PlaylistPlus"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                                <Separator/>
-                                                <MenuItem Header="Delete" Click="DeleteClip_Click">
-                                                    <MenuItem.Icon>
-                                                        <materialDesign:PackIcon Kind="Delete"/>
-                                                    </MenuItem.Icon>
-                                                </MenuItem>
-                                            </ContextMenu>
-                                        </Grid.ContextMenu>
                                     </Grid>
                                 </Border>
                                 <DataTemplate.Triggers>
@@ -771,12 +710,15 @@
             <DockPanel>
                 <!-- Streamlabs Integration -->
                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
-                    <!-- Streamlabs Status -->
+                    <!-- Streamlabs Status (clickable to connect) -->
                     <Border Background="{DynamicResource ThemeBgTertiaryBrush}"
                             CornerRadius="8"
                             Padding="8,4"
                             Margin="0,0,8,0"
-                            VerticalAlignment="Center">
+                            VerticalAlignment="Center"
+                            Cursor="Hand"
+                            MouseLeftButtonDown="StreamlabsStatus_Click"
+                            ToolTip="Click to connect">
                         <StackPanel Orientation="Horizontal">
                             <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,6,0">
                                 <Ellipse.Style>

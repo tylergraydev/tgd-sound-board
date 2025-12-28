@@ -14,43 +14,52 @@ public class AppAudioService
 
         try
         {
-            var deviceEnumerator = new MMDeviceEnumerator();
-            var device = deviceEnumerator.GetDefaultAudioEndpoint(DataFlow.Render, Role.Multimedia);
-            var sessionManager = device.AudioSessionManager;
+            // Get all processes with a main window (visible apps)
+            var processes = Process.GetProcesses()
+                .Where(p => !string.IsNullOrEmpty(p.MainWindowTitle) || IsKnownAudioApp(p.ProcessName))
+                .ToList();
 
-            for (int i = 0; i < sessionManager.Sessions.Count; i++)
+            foreach (var process in processes)
             {
-                var session = sessionManager.Sessions[i];
-                var processId = (int)session.GetProcessID;
-
-                if (processId == 0) continue;
-
                 try
                 {
-                    var process = Process.GetProcessById(processId);
                     var app = new AudioApp
                     {
-                        ProcessId = processId,
+                        ProcessId = process.Id,
                         ProcessName = process.ProcessName,
-                        DisplayName = GetDisplayName(session, process),
-                        Volume = session.SimpleAudioVolume.Volume,
-                        IsMuted = session.SimpleAudioVolume.Mute,
+                        DisplayName = !string.IsNullOrEmpty(process.MainWindowTitle)
+                            ? process.MainWindowTitle
+                            : process.ProcessName,
+                        Volume = 1.0f,
+                        IsMuted = false,
                         IconPath = GetProcessIconPath(process)
                     };
                     apps.Add(app);
                 }
                 catch
                 {
-                    // Process may have exited
+                    // Process may have exited or access denied
                 }
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Error getting audio apps: {ex.Message}");
+            Debug.WriteLine($"Error getting apps: {ex.Message}");
         }
 
         return apps.DistinctBy(a => a.ProcessId).OrderBy(a => a.DisplayName).ToList();
+    }
+
+    private static bool IsKnownAudioApp(string processName)
+    {
+        // Common audio apps that might not have a window title
+        var knownApps = new[]
+        {
+            "spotify", "discord", "chrome", "firefox", "msedge", "brave",
+            "vlc", "foobar2000", "winamp", "itunes", "musicbee",
+            "obs64", "obs32", "streamlabs", "slack", "teams", "zoom"
+        };
+        return knownApps.Any(a => processName.Equals(a, StringComparison.OrdinalIgnoreCase));
     }
 
     private static string GetDisplayName(AudioSessionControl session, Process process)
