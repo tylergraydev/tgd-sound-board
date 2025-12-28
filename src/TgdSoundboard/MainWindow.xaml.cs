@@ -610,4 +610,20 @@ public partial class MainWindow : Window
     }
 
     #endregion
+
+    #region Streamlabs
+
+    private async void SaveReplay_Click(object sender, RoutedEventArgs e)
+    {
+        await App.MainViewModel.SaveReplayCommand.ExecuteAsync(null);
+    }
+
+    private void StreamlabsSettings_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new StreamlabsSettingsDialog();
+        dialog.Owner = this;
+        dialog.ShowDialog();
+    }
+
+    #endregion
 }

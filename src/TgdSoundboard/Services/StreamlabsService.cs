@@ -11,7 +11,6 @@ public class StreamlabsService : IDisposable
     private string _token = string.Empty;
     private int _requestId;
     private bool _isConnected;
-    private CancellationTokenSource? _reconnectCts;
     private readonly SemaphoreSlim _sendLock = new(1, 1);
 
     public bool IsConnected => _isConnected;
@@ -257,8 +256,6 @@ public class StreamlabsService : IDisposable
 
     public async Task DisconnectAsync()
     {
-        _reconnectCts?.Cancel();
-
         if (_webSocket?.State == WebSocketState.Open)
         {
             try
@@ -276,8 +273,6 @@ public class StreamlabsService : IDisposable
 
     public void Dispose()
     {
-        _reconnectCts?.Cancel();
-        _reconnectCts?.Dispose();
         _webSocket?.Dispose();
         _sendLock.Dispose();
     }

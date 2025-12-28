@@ -693,9 +693,72 @@
                 Background="{DynamicResource ThemeBgSecondaryBrush}"
                 Padding="20,12">
             <DockPanel>
+                <!-- Streamlabs Integration -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" HorizontalAlignment="Right">
+                    <!-- Streamlabs Status -->
+                    <Border Background="{DynamicResource ThemeBgTertiaryBrush}"
+                            CornerRadius="8"
+                            Padding="8,4"
+                            Margin="0,0,8,0"
+                            VerticalAlignment="Center">
+                        <StackPanel Orientation="Horizontal">
+                            <Ellipse Width="8" Height="8" VerticalAlignment="Center" Margin="0,0,6,0">
+                                <Ellipse.Style>
+                                    <Style TargetType="Ellipse">
+                                        <Setter Property="Fill" Value="#F44336"/>
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding IsStreamlabsConnected}" Value="True">
+                                                <Setter Property="Fill" Value="#4CAF50"/>
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Ellipse.Style>
+                            </Ellipse>
+                            <TextBlock Text="{Binding StreamlabsStatus}"
+                                       VerticalAlignment="Center"
+                                       FontSize="11"
+                                       Foreground="{DynamicResource ThemeTextSecondaryBrush}"
+                                       MaxWidth="150"
+                                       TextTrimming="CharacterEllipsis"/>
+                        </StackPanel>
+                    </Border>
+
+                    <!-- Save Replay Button -->
+                    <Button Click="SaveReplay_Click"
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Background="#9146FF"
+                            Foreground="White"
+                            Padding="12,6"
+                            Margin="0,0,8,0"
+                            ToolTip="Save Instant Replay"
+                            IsEnabled="{Binding IsStreamlabsConnected}"
+                            materialDesign:ButtonAssist.CornerRadius="8">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Replay" VerticalAlignment="Center"/>
+                            <TextBlock Text="Replay" Margin="6,0,0,0" VerticalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
+
+                    <!-- Streamlabs Settings Button -->
+                    <Button Click="StreamlabsSettings_Click"
+                            Style="{StaticResource MaterialDesignFlatButton}"
+                            Background="{DynamicResource ThemeBgTertiaryBrush}"
+                            Foreground="{DynamicResource ThemeTextPrimaryBrush}"
+                            Padding="8,6"
+                            ToolTip="Streamlabs Settings"
+                            materialDesign:ButtonAssist.CornerRadius="8">
+                        <materialDesign:PackIcon Kind="Cog" VerticalAlignment="Center"/>
+                    </Button>
+                </StackPanel>
+
+                <!-- Left side tip -->
                 <StackPanel DockPanel.Dock="Left" Orientation="Horizontal">
-                    <materialDesign:PackIcon Kind="Information" VerticalAlignment="Center" Foreground="{DynamicResource ThemeTextMutedBrush}" Margin="0,0,8,0"/>
-                    <TextBlock Text="Tip: Use Streamlabs Application Audio Capture to stream soundboard audio"
+                    <materialDesign:PackIcon Kind="Twitch" VerticalAlignment="Center" Foreground="#9146FF" Margin="0,0,8,0"/>
+                    <TextBlock Text="Streamlabs"
+                               VerticalAlignment="Center"
+                               FontWeight="Medium"
+                               Margin="0,0,16,0"/>
+                    <TextBlock Text="Save instant replays with one click"
                                VerticalAlignment="Center"
                                Foreground="{DynamicResource ThemeTextMutedBrush}"
                                FontSize="12"/>
