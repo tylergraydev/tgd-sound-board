@@ -313,7 +313,7 @@
                                         <!-- Context menu -->
                                         <Grid.ContextMenu>
                                             <ContextMenu>
-                                                <MenuItem Header="Edit" Click="EditClip_Click">
+                                                <MenuItem Header="Rename" Click="EditClip_Click">
                                                     <MenuItem.Icon>
                                                         <materialDesign:PackIcon Kind="Pencil"/>
                                                     </MenuItem.Icon>

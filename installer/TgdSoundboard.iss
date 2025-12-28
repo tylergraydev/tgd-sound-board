@@ -2,7 +2,7 @@
 ; Requires Inno Setup 6.0 or later
 
 #define MyAppName "TGD Soundboard"
-#define MyAppVersion "1.3.1"
+#define MyAppVersion "1.4.0"
 #define MyAppPublisher "TGD"
 #define MyAppURL "https://github.com/tylergraydev/tgd-sound-board"
 #define MyAppExeName "TgdSoundboard.exe"

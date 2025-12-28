@@ -218,6 +218,7 @@ public class DatabaseService
         settings.GridColumns = int.TryParse(await GetSettingAsync("GridColumns"), out var cols) ? cols : 6;
         settings.ClipsDirectory = await GetSettingAsync("ClipsDirectory") ??
             Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "TgdSoundboard", "Clips");
+        settings.Theme = await GetSettingAsync("Theme") ?? "Neon";
 
         Directory.CreateDirectory(settings.ClipsDirectory);
 
@@ -235,6 +236,7 @@ public class DatabaseService
         await SetSettingAsync("PassMicrophone", settings.PassMicrophone.ToString());
         await SetSettingAsync("GridColumns", settings.GridColumns.ToString());
         await SetSettingAsync("ClipsDirectory", settings.ClipsDirectory);
+        await SetSettingAsync("Theme", settings.Theme);
     }
 
     private class SoundClipDto

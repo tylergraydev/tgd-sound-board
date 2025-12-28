@@ -187,11 +187,18 @@ public partial class MainWindow : Window
         }
     }
 
-    private void EditClip_Click(object sender, RoutedEventArgs e)
+    private async void EditClip_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
         {
-            // TODO: Open edit dialog
+            var dialog = new RenameDialog(clip.Name);
+            dialog.Owner = this;
+
+            if (dialog.ShowDialog() == true)
+            {
+                clip.Name = dialog.ClipName;
+                await App.Database.UpdateClipAsync(clip);
+            }
         }
     }
 
