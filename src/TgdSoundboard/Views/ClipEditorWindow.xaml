@@ -1,0 +1,115 @@
+<Window x:Class="TgdSoundboard.Views.ClipEditorWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        xmlns:controls="clr-namespace:TgdSoundboard.Controls"
+        mc:Ignorable="d"
+        Title="Clip Editor - Create Sound Clip"
+        Height="450" Width="800"
+        MinHeight="400" MinWidth="600"
+        WindowStartupLocation="CenterOwner"
+        Background="{DynamicResource MaterialDesign.Brush.Background}"
+        TextElement.Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+        TextElement.FontWeight="Regular"
+        TextElement.FontSize="13"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <StackPanel Grid.Row="0" Margin="0,0,0,20">
+            <TextBlock Text="Create Clip from Audio" FontSize="24" FontWeight="Medium"/>
+            <TextBlock Text="{Binding FileName}" Opacity="0.6" Margin="0,4,0,0"/>
+        </StackPanel>
+
+        <!-- Waveform -->
+        <Border Grid.Row="1"
+                Background="{DynamicResource MaterialDesign.Brush.Card.Background}"
+                CornerRadius="8"
+                Padding="10">
+            <controls:WaveformControl x:Name="Waveform"
+                                      AudioFile="{Binding FilePath}"
+                                      SelectionStart="{Binding SelectionStart, Mode=TwoWay}"
+                                      SelectionEnd="{Binding SelectionEnd, Mode=TwoWay}"
+                                      Duration="{Binding Duration, Mode=OneWayToSource}"
+                                      PlaybackPosition="{Binding PlaybackPosition}"
+                                      WaveformColor="{DynamicResource MaterialDesign.Brush.Primary.Light}"
+                                      Height="150"/>
+        </Border>
+
+        <!-- Time indicators -->
+        <Grid Grid.Row="2" Margin="0,12,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <TextBlock Text="Start: " Opacity="0.7"/>
+                <TextBlock Text="{Binding SelectionStartTime, Converter={StaticResource TimeSpanToString}}" FontWeight="Medium"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Center">
+                <TextBlock Text="Duration: " Opacity="0.7"/>
+                <TextBlock Text="{Binding SelectionDuration, Converter={StaticResource TimeSpanToString}}" FontWeight="Medium"/>
+            </StackPanel>
+
+            <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                <TextBlock Text="End: " Opacity="0.7"/>
+                <TextBlock Text="{Binding SelectionEndTime, Converter={StaticResource TimeSpanToString}}" FontWeight="Medium"/>
+            </StackPanel>
+        </Grid>
+
+        <!-- Playback controls and clip name -->
+        <Grid Grid.Row="3" Margin="0,20,0,0">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <!-- Playback controls -->
+            <StackPanel Grid.Column="0" Orientation="Horizontal">
+                <Button Click="PlaySelection_Click"
+                        Style="{StaticResource MaterialDesignFloatingActionMiniButton}"
+                        ToolTip="Play Selection">
+                    <materialDesign:PackIcon Kind="Play" Width="20" Height="20"/>
+                </Button>
+                <Button Click="Stop_Click"
+                        Style="{StaticResource MaterialDesignFloatingActionMiniSecondaryButton}"
+                        Margin="8,0,0,0"
+                        ToolTip="Stop">
+                    <materialDesign:PackIcon Kind="Stop" Width="20" Height="20"/>
+                </Button>
+            </StackPanel>
+
+            <!-- Clip name input -->
+            <TextBox Grid.Column="1"
+                     x:Name="ClipNameTextBox"
+                     Text="{Binding ClipName, UpdateSourceTrigger=PropertyChanged}"
+                     Margin="20,0,0,0"
+                     materialDesign:HintAssist.Hint="Clip Name"
+                     Style="{StaticResource MaterialDesignOutlinedTextBox}"/>
+        </Grid>
+
+        <!-- Action buttons -->
+        <StackPanel Grid.Row="4" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
+            <Button Content="Cancel"
+                    Click="Cancel_Click"
+                    Style="{StaticResource MaterialDesignFlatButton}"
+                    Margin="0,0,12,0"/>
+            <Button Content="Create Clip"
+                    Click="CreateClip_Click"
+                    Style="{StaticResource MaterialDesignRaisedButton}"/>
+        </StackPanel>
+    </Grid>
+</Window>

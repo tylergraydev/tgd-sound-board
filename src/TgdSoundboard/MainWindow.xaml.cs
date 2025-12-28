@@ -1,0 +1,123 @@
+using System.Windows;
+using System.Windows.Input;
+using Microsoft.Win32;
+using TgdSoundboard.Models;
+using TgdSoundboard.Views;
+
+namespace TgdSoundboard;
+
+public partial class MainWindow : Window
+{
+    public MainWindow()
+    {
+        InitializeComponent();
+        DataContext = App.MainViewModel;
+    }
+
+    private void Window_DragOver(object sender, DragEventArgs e)
+    {
+        if (e.Data.GetDataPresent(DataFormats.FileDrop))
+        {
+            var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+            var hasAudioFiles = files.Any(f =>
+            {
+                var ext = System.IO.Path.GetExtension(f).ToLowerInvariant();
+                return ext is ".mp3" or ".wav" or ".flac" or ".ogg" or ".m4a";
+            });
+
+            e.Effects = hasAudioFiles ? DragDropEffects.Copy : DragDropEffects.None;
+        }
+        else
+        {
+            e.Effects = DragDropEffects.None;
+        }
+        e.Handled = true;
+    }
+
+    private async void Window_Drop(object sender, DragEventArgs e)
+    {
+        if (!e.Data.GetDataPresent(DataFormats.FileDrop)) return;
+
+        var files = (string[])e.Data.GetData(DataFormats.FileDrop);
+        foreach (var file in files)
+        {
+            var ext = System.IO.Path.GetExtension(file).ToLowerInvariant();
+            if (ext is ".mp3" or ".wav" or ".flac" or ".ogg" or ".m4a")
+            {
+                await App.MainViewModel.AddClipCommand.ExecuteAsync(file);
+            }
+        }
+    }
+
+    private async void ImportClip_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "Audio Files|*.mp3;*.wav;*.flac;*.ogg;*.m4a|All Files|*.*",
+            Title = "Select Audio File",
+            Multiselect = true
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            foreach (var file in dialog.FileNames)
+            {
+                await App.MainViewModel.AddClipCommand.ExecuteAsync(file);
+            }
+        }
+    }
+
+    private void ImportAndTrim_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFileDialog
+        {
+            Filter = "Audio Files|*.mp3;*.wav;*.flac;*.ogg;*.m4a|All Files|*.*",
+            Title = "Select Audio File to Clip"
+        };
+
+        if (dialog.ShowDialog() == true)
+        {
+            var clipEditor = new ClipEditorWindow(dialog.FileName);
+            clipEditor.Owner = this;
+            if (clipEditor.ShowDialog() == true && clipEditor.Result != null)
+            {
+                var result = clipEditor.Result;
+                _ = App.MainViewModel.SaveTrimmedClipCommand.ExecuteAsync(
+                    (result.SourcePath, result.ClipName, result.StartTime, result.EndTime));
+            }
+        }
+    }
+
+    private void ClipCard_Click(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            App.MainViewModel.PlayClipCommand.Execute(clip);
+        }
+    }
+
+    private void EditClip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            // TODO: Open edit dialog
+        }
+    }
+
+    private async void DeleteClip_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is FrameworkElement element && element.DataContext is SoundClip clip)
+        {
+            var result = MessageBox.Show(
+                $"Are you sure you want to delete '{clip.Name}'?",
+                "Delete Clip",
+                MessageBoxButton.YesNo,
+                MessageBoxImage.Question);
+
+            if (result == MessageBoxResult.Yes)
+            {
+                await App.MainViewModel.DeleteClipCommand.ExecuteAsync(clip);
+            }
+        }
+    }
+}
