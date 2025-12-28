@@ -39,9 +39,10 @@ public class ThemeService
         var app = Application.Current;
         if (app == null) return;
 
-        // Remove existing theme dictionaries
+        // Find and remove only theme dictionaries (not MaterialDesign ones)
         var toRemove = app.Resources.MergedDictionaries
-            .Where(d => d.Source?.ToString().Contains("Themes/") == true)
+            .Where(d => d.Source?.ToString().Contains("/Themes/") == true &&
+                        d.Source?.ToString().Contains("TgdSoundboard") == true)
             .ToList();
 
         foreach (var dict in toRemove)
@@ -58,12 +59,19 @@ public class ThemeService
             _ => "Themes/NeonTheme.xaml"
         };
 
-        var themeDict = new ResourceDictionary
+        try
         {
-            Source = new Uri($"pack://application:,,,/TgdSoundboard;component/{themePath}")
-        };
+            var themeDict = new ResourceDictionary
+            {
+                Source = new Uri($"pack://application:,,,/TgdSoundboard;component/{themePath}")
+            };
 
-        app.Resources.MergedDictionaries.Add(themeDict);
+            app.Resources.MergedDictionaries.Add(themeDict);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Error loading theme: {ex.Message}");
+        }
     }
 
     public static string GetThemeName(AppTheme theme) => theme switch

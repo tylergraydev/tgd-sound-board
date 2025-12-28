@@ -16,9 +16,6 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
-        // Initialize theme service with default theme
-        ThemeService.Initialize(AppTheme.Neon);
-
         // Initialize update service and check for updates
         UpdateService.Initialize();
         UpdateService.CheckForUpdates(silent: true);
@@ -27,7 +24,7 @@ public partial class App : Application
         Database = new DatabaseService();
         var settings = await Database.GetAppSettingsAsync();
 
-        // Apply saved theme if available
+        // Apply saved theme if available (after app resources are loaded)
         if (!string.IsNullOrEmpty(settings.Theme) && Enum.TryParse<AppTheme>(settings.Theme, out var savedTheme))
         {
             ThemeService.CurrentTheme = savedTheme;
