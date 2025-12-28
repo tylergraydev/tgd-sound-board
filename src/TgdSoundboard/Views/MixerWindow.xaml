@@ -1,0 +1,177 @@
+<Window x:Class="TgdSoundboard.Views.MixerWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+        mc:Ignorable="d"
+        Title="Audio Mixer"
+        Height="600" Width="800"
+        WindowStartupLocation="CenterOwner"
+        Background="{StaticResource DarkBgBrush}"
+        TextElement.Foreground="White"
+        FontFamily="{DynamicResource MaterialDesignFont}">
+
+    <Grid>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- Header -->
+        <Border Grid.Row="0" Background="{StaticResource HeaderGradient}" Padding="24,20">
+            <DockPanel>
+                <StackPanel DockPanel.Dock="Left">
+                    <TextBlock Text="A U D I O   M I X E R" FontSize="20" FontWeight="Bold"/>
+                    <TextBlock Text="Control levels for all audio sources" Opacity="0.7" Margin="0,4,0,0"/>
+                </StackPanel>
+
+                <!-- Monitor Toggle -->
+                <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" VerticalAlignment="Center">
+                    <Border Background="#40000000" CornerRadius="8" Padding="12,8">
+                        <StackPanel Orientation="Horizontal">
+                            <materialDesign:PackIcon Kind="Headphones" VerticalAlignment="Center"
+                                                     Foreground="{StaticResource NeonGreenBrush}" Margin="0,0,8,0"/>
+                            <TextBlock Text="MONITOR" VerticalAlignment="Center" FontWeight="Bold" Margin="0,0,12,0"/>
+                            <ToggleButton x:Name="MonitorToggle"
+                                          Style="{StaticResource MaterialDesignSwitchToggleButton}"
+                                          Click="MonitorToggle_Click"/>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
+            </DockPanel>
+        </Border>
+
+        <!-- Mixer Channels -->
+        <ScrollViewer Grid.Row="1" HorizontalScrollBarVisibility="Auto" VerticalScrollBarVisibility="Disabled">
+            <ItemsControl x:Name="ChannelList" Padding="20">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <StackPanel Orientation="Horizontal"/>
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate>
+                        <Border Background="{StaticResource SidebarBgBrush}" CornerRadius="12"
+                                Margin="8" Padding="16" Width="120">
+                            <Grid>
+                                <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="*"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
+                                </Grid.RowDefinitions>
+
+                                <!-- Icon -->
+                                <Border Grid.Row="0" Width="48" Height="48" CornerRadius="24"
+                                        Background="{StaticResource NeonPurpleBrush}"
+                                        HorizontalAlignment="Center" Margin="0,0,0,12">
+                                    <materialDesign:PackIcon Kind="{Binding IconKind}" Width="24" Height="24"
+                                                             HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                </Border>
+
+                                <!-- Level Meter & Volume Slider -->
+                                <Grid Grid.Row="1" Height="200" Margin="0,8">
+                                    <!-- Background track -->
+                                    <Border Background="#20FFFFFF" CornerRadius="4" Width="12" HorizontalAlignment="Center"/>
+
+                                    <!-- Level meter (peak) -->
+                                    <Border x:Name="LevelMeter" Background="{StaticResource NeonGreenBrush}"
+                                            CornerRadius="4" Width="12" HorizontalAlignment="Center"
+                                            VerticalAlignment="Bottom"
+                                            Height="{Binding PeakLevel, Converter={StaticResource LevelToHeightConverter}}">
+                                        <Border.Effect>
+                                            <DropShadowEffect Color="#00FF87" BlurRadius="10" ShadowDepth="0"/>
+                                        </Border.Effect>
+                                    </Border>
+
+                                    <!-- Volume slider overlay -->
+                                    <Slider Orientation="Vertical" Minimum="0" Maximum="1"
+                                            Value="{Binding Volume, Mode=TwoWay}"
+                                            VerticalAlignment="Stretch"
+                                            ValueChanged="VolumeSlider_ValueChanged"
+                                            Tag="{Binding}"
+                                            Opacity="0.8"/>
+                                </Grid>
+
+                                <!-- Volume percentage -->
+                                <TextBlock Grid.Row="2"
+                                           Text="{Binding Volume, StringFormat={}{0:P0}}"
+                                           HorizontalAlignment="Center"
+                                           FontSize="14" FontWeight="Bold"
+                                           Foreground="{StaticResource NeonBlueBrush}"/>
+
+                                <!-- Source name -->
+                                <TextBlock Grid.Row="3" Text="{Binding Name}"
+                                           HorizontalAlignment="Center"
+                                           FontSize="12" FontWeight="Medium"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,8,0,0"/>
+
+                                <!-- Mute button -->
+                                <ToggleButton Grid.Row="4"
+                                              Style="{StaticResource MaterialDesignFlatPrimaryToggleButton}"
+                                              IsChecked="{Binding IsMuted}"
+                                              Click="MuteButton_Click"
+                                              Tag="{Binding}"
+                                              HorizontalAlignment="Center"
+                                              Margin="0,8,0,0"
+                                              Width="40" Height="40">
+                                    <materialDesign:PackIcon x:Name="MuteIcon">
+                                        <materialDesign:PackIcon.Style>
+                                            <Style TargetType="materialDesign:PackIcon">
+                                                <Setter Property="Kind" Value="VolumeHigh"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsMuted}" Value="True">
+                                                        <Setter Property="Kind" Value="VolumeOff"/>
+                                                        <Setter Property="Foreground" Value="{StaticResource NeonPinkBrush}"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </materialDesign:PackIcon.Style>
+                                    </materialDesign:PackIcon>
+                                </ToggleButton>
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+        </ScrollViewer>
+
+        <!-- Footer with master output -->
+        <Border Grid.Row="2" Background="#10FFFFFF" Padding="24,16">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Master label -->
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                    <materialDesign:PackIcon Kind="Speaker" Foreground="{StaticResource NeonPurpleBrush}"
+                                             Width="24" Height="24" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="MASTER OUTPUT" FontWeight="Bold" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <!-- Master level meter -->
+                <Grid Grid.Column="1" Margin="24,0">
+                    <Border Background="#20FFFFFF" CornerRadius="4" Height="20"/>
+                    <Border x:Name="MasterLevelBar" Background="{StaticResource NeonGreenBrush}"
+                            CornerRadius="4" Height="20" HorizontalAlignment="Left">
+                        <Border.Effect>
+                            <DropShadowEffect Color="#00FF87" BlurRadius="8" ShadowDepth="0"/>
+                        </Border.Effect>
+                    </Border>
+                </Grid>
+
+                <!-- Level indicator -->
+                <TextBlock Grid.Column="2" x:Name="MasterLevelText" Text="0 dB"
+                           FontWeight="Bold" VerticalAlignment="Center"
+                           Foreground="{StaticResource NeonBlueBrush}" Width="60"/>
+            </Grid>
+        </Border>
+    </Grid>
+</Window>

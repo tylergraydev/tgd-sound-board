@@ -18,7 +18,10 @@
         FontFamily="{DynamicResource MaterialDesignFont}"
         AllowDrop="True"
         Drop="Window_Drop"
-        DragOver="Window_DragOver">
+        DragOver="Window_DragOver"
+        WindowStyle="None"
+        ResizeMode="CanResizeWithGrip"
+        AllowsTransparency="True">
 
     <Grid>
         <Grid.RowDefinitions>
@@ -27,53 +30,95 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <!-- Header with gradient -->
-        <Border Grid.Row="0" Background="{StaticResource HeaderGradient}" Padding="20,16">
-            <DockPanel>
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
-                    <Border Background="{StaticResource NeonPinkBrush}" CornerRadius="8" Padding="8,4" VerticalAlignment="Center">
-                        <materialDesign:PackIcon Kind="VolumeHigh" Width="24" Height="24"/>
-                    </Border>
-                    <TextBlock Text="TGD SOUNDBOARD" FontSize="22" FontWeight="Bold" Margin="12,0,0,0" VerticalAlignment="Center">
-                        <TextBlock.Effect>
-                            <DropShadowEffect Color="#FF006E" BlurRadius="15" ShadowDepth="0" Opacity="0.5"/>
-                        </TextBlock.Effect>
-                    </TextBlock>
-                </StackPanel>
+        <!-- Custom Title Bar with gradient -->
+        <Border Grid.Row="0" Background="{StaticResource HeaderGradient}" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
 
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
-                    <!-- Master Volume -->
-                    <Border Background="#40000000" CornerRadius="20" Padding="16,8" Margin="0,0,12,0">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="VolumeHigh" VerticalAlignment="Center" Foreground="{StaticResource NeonGreenBrush}"/>
-                            <Slider x:Name="MasterVolumeSlider"
-                                    Width="100"
-                                    Minimum="0" Maximum="1"
-                                    Value="{Binding MasterVolume}"
-                                    VerticalAlignment="Center"
-                                    Margin="8,0"/>
-                            <TextBlock Text="{Binding MasterVolume, StringFormat={}{0:P0}}"
-                                       Width="40"
-                                       VerticalAlignment="Center"
-                                       Foreground="{StaticResource NeonGreenBrush}"
-                                       FontWeight="Bold"/>
-                        </StackPanel>
-                    </Border>
+                <!-- Window Controls Row -->
+                <DockPanel Grid.Row="0" Height="32">
+                    <StackPanel DockPanel.Dock="Right" Orientation="Horizontal">
+                        <Button Click="Minimize_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                                Width="46" Height="32" Padding="0" Foreground="White">
+                            <materialDesign:PackIcon Kind="WindowMinimize" Width="16" Height="16"/>
+                        </Button>
+                        <Button Click="Maximize_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                                Width="46" Height="32" Padding="0" Foreground="White">
+                            <materialDesign:PackIcon x:Name="MaximizeIcon" Kind="WindowMaximize" Width="16" Height="16"/>
+                        </Button>
+                        <Button Click="Close_Click" Style="{StaticResource MaterialDesignFlatButton}"
+                                Width="46" Height="32" Padding="0" Foreground="White"
+                                materialDesign:RippleAssist.Feedback="#FF006E">
+                            <materialDesign:PackIcon Kind="Close" Width="16" Height="16"/>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Text="" DockPanel.Dock="Left"/>
+                </DockPanel>
 
-                    <!-- Stop All Button -->
-                    <Button Click="StopAll_Click"
-                            Style="{StaticResource MaterialDesignFlatButton}"
-                            Background="#E0FF006E"
-                            Foreground="White"
-                            Padding="16,8"
-                            materialDesign:ButtonAssist.CornerRadius="20">
-                        <StackPanel Orientation="Horizontal">
-                            <materialDesign:PackIcon Kind="Stop" VerticalAlignment="Center"/>
-                            <TextBlock Text="STOP ALL" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
-                        </StackPanel>
-                    </Button>
-                </StackPanel>
-            </DockPanel>
+                <!-- Header Content -->
+                <DockPanel Grid.Row="1" Margin="20,0,20,16">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Border Background="{StaticResource NeonPinkBrush}" CornerRadius="8" Padding="8,4" VerticalAlignment="Center">
+                            <materialDesign:PackIcon Kind="VolumeHigh" Width="24" Height="24"/>
+                        </Border>
+                        <TextBlock Text="TGD SOUNDBOARD" FontSize="22" FontWeight="Bold" Margin="12,0,0,0" VerticalAlignment="Center">
+                            <TextBlock.Effect>
+                                <DropShadowEffect Color="#FF006E" BlurRadius="15" ShadowDepth="0" Opacity="0.5"/>
+                            </TextBlock.Effect>
+                        </TextBlock>
+                    </StackPanel>
+
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" HorizontalAlignment="Right">
+                        <!-- Mixer Button -->
+                        <Button Click="OpenMixer_Click"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Background="#40000000"
+                                Foreground="White"
+                                Padding="16,8"
+                                Margin="0,0,12,0"
+                                materialDesign:ButtonAssist.CornerRadius="20">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="TuneVertical" VerticalAlignment="Center" Foreground="{StaticResource NeonBlueBrush}"/>
+                                <TextBlock Text="MIXER" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Button>
+
+                        <!-- Master Volume -->
+                        <Border Background="#40000000" CornerRadius="20" Padding="16,8" Margin="0,0,12,0">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="VolumeHigh" VerticalAlignment="Center" Foreground="{StaticResource NeonGreenBrush}"/>
+                                <Slider x:Name="MasterVolumeSlider"
+                                        Width="100"
+                                        Minimum="0" Maximum="1"
+                                        Value="{Binding MasterVolume}"
+                                        VerticalAlignment="Center"
+                                        Margin="8,0"/>
+                                <TextBlock Text="{Binding MasterVolume, StringFormat={}{0:P0}}"
+                                           Width="40"
+                                           VerticalAlignment="Center"
+                                           Foreground="{StaticResource NeonGreenBrush}"
+                                           FontWeight="Bold"/>
+                            </StackPanel>
+                        </Border>
+
+                        <!-- Stop All Button -->
+                        <Button Click="StopAll_Click"
+                                Style="{StaticResource MaterialDesignFlatButton}"
+                                Background="#E0FF006E"
+                                Foreground="White"
+                                Padding="16,8"
+                                materialDesign:ButtonAssist.CornerRadius="20">
+                            <StackPanel Orientation="Horizontal">
+                                <materialDesign:PackIcon Kind="Stop" VerticalAlignment="Center"/>
+                                <TextBlock Text="STOP ALL" Margin="8,0,0,0" VerticalAlignment="Center" FontWeight="Bold"/>
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                </DockPanel>
+            </Grid>
         </Border>
 
         <!-- Main Content -->

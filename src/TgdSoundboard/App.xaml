@@ -49,6 +49,7 @@
             <converters:ZeroToVisibleConverter x:Key="ZeroToVisible"/>
             <converters:TimeSpanToStringConverter x:Key="TimeSpanToString"/>
             <converters:BoolToPlayPauseConverter x:Key="BoolToPlayPause"/>
+            <converters:LevelToHeightConverter x:Key="LevelToHeightConverter" MaxHeight="200"/>
             <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
         </ResourceDictionary>
     </Application.Resources>

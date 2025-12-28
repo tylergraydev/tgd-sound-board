@@ -16,6 +16,10 @@ public partial class App : Application
     {
         base.OnStartup(e);
 
+        // Initialize update service and check for updates
+        UpdateService.Initialize();
+        UpdateService.CheckForUpdates(silent: true);
+
         // Initialize services
         Database = new DatabaseService();
         var settings = await Database.GetAppSettingsAsync();

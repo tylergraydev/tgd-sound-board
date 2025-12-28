@@ -12,11 +12,57 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DataContext = App.MainViewModel;
+        StateChanged += MainWindow_StateChanged;
     }
+
+    #region Window Chrome Controls
+
+    private void TitleBar_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ClickCount == 2)
+        {
+            Maximize_Click(sender, e);
+        }
+        else
+        {
+            DragMove();
+        }
+    }
+
+    private void Minimize_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState.Minimized;
+    }
+
+    private void Maximize_Click(object sender, RoutedEventArgs e)
+    {
+        WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+    }
+
+    private void MainWindow_StateChanged(object? sender, EventArgs e)
+    {
+        MaximizeIcon.Kind = WindowState == WindowState.Maximized
+            ? MaterialDesignThemes.Wpf.PackIconKind.WindowRestore
+            : MaterialDesignThemes.Wpf.PackIconKind.WindowMaximize;
+    }
+
+    private void Close_Click(object sender, RoutedEventArgs e)
+    {
+        Close();
+    }
+
+    #endregion
 
     private void StopAll_Click(object sender, RoutedEventArgs e)
     {
         App.MainViewModel.StopAllCommand.Execute(null);
+    }
+
+    private void OpenMixer_Click(object sender, RoutedEventArgs e)
+    {
+        var mixerWindow = new MixerWindow();
+        mixerWindow.Owner = this;
+        mixerWindow.Show();
     }
 
     private void OpenAppRouting_Click(object sender, RoutedEventArgs e)
