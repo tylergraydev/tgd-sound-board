@@ -36,12 +36,6 @@ jobs:
             --self-contained true `
             -o publish/win-x64
 
-      - name: Download VB-Cable
-        run: |
-          New-Item -ItemType Directory -Path installer/vb-cable -Force
-          Invoke-WebRequest -Uri "https://download.vb-audio.com/Download_CABLE/VBCABLE_Driver_Pack43.zip" -OutFile installer/vb-cable/VBCABLE_Driver_Pack.zip
-          Expand-Archive -Path installer/vb-cable/VBCABLE_Driver_Pack.zip -DestinationPath installer/vb-cable -Force
-
       - name: Build installer with Inno Setup
         run: |
           & "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" installer\TgdSoundboard.iss
